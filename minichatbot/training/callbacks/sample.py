@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import IO, Any
 
+import torch
+
 from minichatbot.inference.generator import Generator
 from minichatbot.inference.text_generator import TextGenerator
 from minichatbot.tokenizer.bpe import (
@@ -17,6 +19,7 @@ from minichatbot.tokenizer.bpe import (
 )
 from minichatbot.training.callbacks import CALLBACK_REGISTRY
 from minichatbot.training.callbacks.base import Callback, CallbackContext
+from minichatbot.utils.checkpoints import find_best_checkpoint
 
 # All known special tokens, longest-first so e.g. "<|im_start|>" is matched
 # before any partial substring overlap. Sorted len-desc avoids edge cases
@@ -119,9 +122,44 @@ class SampleGenerationCallback(Callback):
         self._generate(ctx)
 
     def on_train_end(self, ctx: CallbackContext) -> None:
+        # Final block: load the best-by-val-loss checkpoint and generate
+        # one last set of samples from it. The current model in memory is
+        # at the latest step, which may be slightly overfit; ckpt_best.pt
+        # is the model the user should compare against for SFT decisions.
+        # Skipped silently if there's no eval data or no checkpoint
+        # callback was configured.
+        if self._fh is not None and self._text_gen is not None:
+            self._generate_from_best(ctx)
         if self._fh is not None:
             self._fh.close()
             self._fh = None
+
+    def _generate_from_best(self, ctx: CallbackContext) -> None:
+        assert self._fh is not None
+        assert self._text_gen is not None
+        best_path = find_best_checkpoint(ctx.run_dir)
+        if best_path is None:
+            return
+        device = next(ctx.model.parameters()).device
+        state = torch.load(best_path, map_location=device, weights_only=False)
+        # Swap weights into the in-memory model. We're at on_train_end —
+        # nothing else uses ctx.model after this, so no need to restore.
+        ctx.model.load_state_dict(state["model"])
+        best_step = state.get("step", "?")
+
+        self._fh.write(f"\n=== BEST MODEL (step {best_step}) ===\n")
+        completions = self._text_gen.generate(
+            self.prompts,
+            max_new_tokens=self.max_new_tokens,
+            return_only_completion=True,
+            skip_special=False,
+        )
+        for prompt, completion in zip(self.prompts, completions, strict=True):
+            if self.colorize:
+                completion = _colorize_specials(completion)
+            self._fh.write(f"PROMPT: {prompt}\n")
+            self._fh.write(f"COMPLETION: {completion}\n\n")
+        self._fh.flush()
 
     def _generate(self, ctx: CallbackContext) -> None:
         assert self._text_gen is not None

@@ -81,4 +81,4 @@ callbacks:
   - type: checkpoint        # one final ckpt at end of training so generate.py has something to load
     params:
       every: 200
-      keep_top_k: 1
+      keep_last_k: 1

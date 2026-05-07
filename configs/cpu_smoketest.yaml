@@ -66,4 +66,4 @@ callbacks:
   - type: checkpoint
     params:
       every: 1000
-      keep_top_k: 1
+      keep_last_k: 1

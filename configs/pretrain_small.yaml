@@ -52,7 +52,7 @@ callbacks:
   - type: checkpoint
     params:
       every: 1000
-      keep_top_k: 3
+      keep_last_k: 3
   - type: eval
     params:
       every: 500

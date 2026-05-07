@@ -3,6 +3,10 @@
 The naming convention `runs/{YYYYMMDD_HHMMSS}_{run_name}/checkpoints/ckpt_step_NNNNNNNN.pt`
 means alphabetical sort = creation order, so finding "latest" is just `max(...)`.
 
+A "best" checkpoint (lowest val loss seen during training) is saved as
+`ckpt_best.pt` in the same directory. Prefer best for SFT bootstrap;
+prefer latest for resuming a paused training run.
+
 Centralized here so future stages (SFT, RL) can bootstrap from a pretrain
 checkpoint without each script reinventing the directory walk.
 """
@@ -12,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 
 CHECKPOINT_GLOB = "ckpt_step_*.pt"
+BEST_CHECKPOINT_NAME = "ckpt_best.pt"
 
 
 def find_latest_run(
@@ -52,3 +57,25 @@ def find_latest_checkpoint_in(
     if run is None:
         return None
     return find_latest_checkpoint(run)
+
+
+def find_best_checkpoint(run_dir: str | Path) -> Path | None:
+    """Return the run's `ckpt_best.pt` if it exists, else None.
+
+    Use this for SFT bootstrap and any post-training generation that
+    should reflect the model's best generalization rather than its
+    final-step state.
+    """
+    p = Path(run_dir) / "checkpoints" / BEST_CHECKPOINT_NAME
+    return p if p.exists() else None
+
+
+def find_best_checkpoint_in(
+    output_dir: str | Path = "runs",
+    run_name: str | None = None,
+) -> Path | None:
+    """Walk `output_dir`, pick the latest run, return its best checkpoint."""
+    run = find_latest_run(output_dir, run_name=run_name)
+    if run is None:
+        return None
+    return find_best_checkpoint(run)
