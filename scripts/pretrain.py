@@ -5,6 +5,11 @@ Usage:
 
 Builds tokenizer, datasets, model, optimizer, scheduler, loss, and
 callbacks from registries based on the YAML; runs Trainer.fit().
+
+Resume from a previous run with --resume:
+    python scripts/pretrain.py --config configs/foo.yaml --resume runs/.../ckpt.pt
+    python scripts/pretrain.py --config configs/foo.yaml --resume auto
+A new run dir is created for the resumed run; the original is left untouched.
 """
 
 from __future__ import annotations
@@ -27,6 +32,10 @@ from minichatbot.training.callbacks import CALLBACK_REGISTRY
 from minichatbot.training.losses import LOSS_REGISTRY
 from minichatbot.training.optim import build_optimizer, build_scheduler
 from minichatbot.training.trainer import Trainer
+from minichatbot.utils.checkpoints import (
+    find_latest_checkpoint,
+    find_latest_checkpoint_in,
+)
 
 
 def resolve_device(device: str) -> torch.device:
@@ -52,6 +61,15 @@ def main() -> None:
     parser.add_argument("--loss", default="pretrain", help="LOSS_REGISTRY key.")
     parser.add_argument("--collator", default="pretrain", help="COLLATOR_REGISTRY key.")
     parser.add_argument("--dataset", default="pretrain", help="DATASET_REGISTRY key.")
+    parser.add_argument(
+        "--resume",
+        default=None,
+        help=(
+            "Resume from a checkpoint .pt OR a run dir (latest ckpt inside). "
+            "Use 'auto' to pick the latest run matching cfg.run_name. "
+            "A new run dir is created for the resumed run; original stays put."
+        ),
+    )
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -63,6 +81,11 @@ def main() -> None:
 
     tok_cls = TOKENIZER_REGISTRY[cfg.tokenizer.type]
     tokenizer = tok_cls.from_config(cfg.tokenizer)
+
+    # Snapshot the tokenizer in the run dir so the run is self-contained:
+    # generate.py / future SFT loaders can find it next to checkpoints
+    # without needing the original data/ tree to still exist.
+    tokenizer.save(run_dir / "tokenizer.json")
 
     ds_cls = DATASET_REGISTRY[args.dataset]
     train_ds = ds_cls.from_config(cfg.data, tokenizer, split="train")
@@ -133,7 +156,35 @@ def main() -> None:
         device=device,
         tokenizer=tokenizer,
     )
+
+    if args.resume is not None:
+        ckpt = _resolve_resume(args.resume, cfg)
+        print(f"resuming from {ckpt} (will continue past step {trainer.step})")
+        trainer.load_checkpoint(ckpt, map_location=device)
+        print(f"resumed at step {trainer.step}")
+
     trainer.fit()
+
+
+def _resolve_resume(arg: str, cfg: Config) -> Path:
+    """Turn a --resume CLI value into a concrete checkpoint path."""
+    if arg == "auto":
+        ckpt = find_latest_checkpoint_in(cfg.output_dir, run_name=cfg.run_name)
+        if ckpt is None:
+            raise SystemExit(
+                f"--resume auto: no checkpoints found under {cfg.output_dir} "
+                f"matching run_name='{cfg.run_name}'."
+            )
+        return ckpt
+    p = Path(arg)
+    if p.is_file():
+        return p
+    if p.is_dir():
+        ckpt = find_latest_checkpoint(p)
+        if ckpt is None:
+            raise SystemExit(f"--resume: no checkpoints in {p}/checkpoints/")
+        return ckpt
+    raise SystemExit(f"--resume path does not exist: {p}")
 
 
 if __name__ == "__main__":

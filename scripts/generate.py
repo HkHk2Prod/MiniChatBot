@@ -73,12 +73,21 @@ def resolve_checkpoint(args: argparse.Namespace) -> Path:
 def resolve_tokenizer_path(checkpoint_path: Path, override: str | None) -> str:
     if override is not None:
         return override
+    # Preferred: the tokenizer copy that pretrain.py writes alongside the
+    # run dir. This makes the run self-contained — the original data/ path
+    # may not even exist anymore (different machine, deleted, renamed).
+    # Layout: runs/<ts>_<name>/checkpoints/ckpt.pt -> ../tokenizer.json
+    run_dir_tokenizer = checkpoint_path.parent.parent / "tokenizer.json"
+    if run_dir_tokenizer.exists():
+        return str(run_dir_tokenizer)
+    # Fallback: whatever the saved config points to. Older runs (before
+    # the run-dir-tokenizer convention) or hand-built checkpoints land here.
     state = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     full_config = state.get("full_config")
     if full_config is None:
         raise SystemExit(
-            f"Checkpoint {checkpoint_path} has no 'full_config'. "
-            "Pass --tokenizer explicitly."
+            f"Checkpoint {checkpoint_path} has no 'full_config' and no "
+            f"sibling tokenizer.json. Pass --tokenizer explicitly."
         )
     path = full_config.get("tokenizer", {}).get("path")
     if path is None:

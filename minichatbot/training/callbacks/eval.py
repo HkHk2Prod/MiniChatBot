@@ -23,9 +23,26 @@ class EvalCallback(Callback):
     Silently skips when either is None.
     """
 
-    def __init__(self, every: int = 500, max_batches: int | None = None) -> None:
+    def __init__(
+        self,
+        every: int = 500,
+        max_batches: int | None = None,
+        eval_at_start: bool = True,
+    ) -> None:
         self.every = every
         self.max_batches = max_batches
+        self.eval_at_start = eval_at_start
+
+    def on_train_start(self, ctx: CallbackContext) -> None:
+        # Baseline eval before any training so the loss trajectory has a
+        # reference point. The Trainer dispatches on_eval_end after
+        # on_train_start when eval_metrics is set, so downstream callbacks
+        # (console/jsonl/tensorboard) will report it normally.
+        if not self.eval_at_start:
+            return
+        if ctx.val_loader is None or ctx.loss_fn is None:
+            return
+        self._run(ctx)
 
     def on_step_end(self, ctx: CallbackContext) -> None:
         if ctx.val_loader is None or ctx.loss_fn is None:

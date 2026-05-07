@@ -80,6 +80,18 @@ class Trainer:
         self.device = device
         self.tokenizer = tokenizer
 
+        # Vocab consistency: a model with vocab_size != tokenizer.vocab_size
+        # silently produces wrong outputs (out-of-range token ids → garbage,
+        # or unused embedding rows → wasted params). Fail loudly here rather
+        # than discover it via a NaN loss or a generation that decodes weird.
+        if tokenizer is not None and model.cfg.vocab_size != tokenizer.vocab_size:
+            raise ValueError(
+                f"vocab_size mismatch: model.cfg.vocab_size={model.cfg.vocab_size}, "
+                f"tokenizer.vocab_size={tokenizer.vocab_size}. They must match. "
+                "Update model.vocab_size in your YAML config to match the tokenizer, "
+                "or retrain the tokenizer with a different --vocab-size."
+            )
+
         self.dtype = _resolve_dtype(config.precision)
         self.use_autocast = config.precision != "fp32"
         self.scaler: GradScaler | None = (
@@ -96,6 +108,11 @@ class Trainer:
     def fit(self) -> None:
         ctx = self._make_ctx()
         self._fire("on_train_start", ctx)
+        # Allow callbacks to publish baseline eval metrics from on_train_start
+        # (e.g., eval-at-step-0 to show the pre-training reference loss).
+        if ctx.eval_metrics is not None:
+            self._fire("on_eval_end", ctx)
+            ctx.eval_metrics = None
         try:
             train_iter = self._cycling(self.train_loader)
             for step in range(self.step + 1, self.config.max_steps + 1):

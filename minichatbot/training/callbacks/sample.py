@@ -7,23 +7,62 @@ from typing import IO, Any
 
 from minichatbot.inference.generator import Generator
 from minichatbot.inference.text_generator import TextGenerator
+from minichatbot.tokenizer.bpe import (
+    BOS_TOKEN,
+    EOS_TOKEN,
+    IM_END_TOKEN,
+    IM_START_TOKEN,
+    PAD_TOKEN,
+    RESERVED_TOKENS,
+)
 from minichatbot.training.callbacks import CALLBACK_REGISTRY
 from minichatbot.training.callbacks.base import Callback, CallbackContext
+
+# All known special tokens, longest-first so e.g. "<|im_start|>" is matched
+# before any partial substring overlap. Sorted len-desc avoids edge cases
+# where one token is a prefix of another.
+_SPECIAL_TOKENS: list[str] = sorted(
+    [PAD_TOKEN, BOS_TOKEN, EOS_TOKEN, IM_START_TOKEN, IM_END_TOKEN, *RESERVED_TOKENS],
+    key=len,
+    reverse=True,
+)
+
+_ANSI_YELLOW = "\x1b[33m"
+_ANSI_RESET = "\x1b[0m"
+
+
+def _colorize_specials(text: str) -> str:
+    """Wrap each special-token occurrence in ANSI yellow.
+
+    Renders as colored text in any ANSI-aware viewer (terminals, `cat`/`less`,
+    VS Code's output panel). Plain text editors will show literal escape
+    sequences — disable via `colorize: false` if that's your primary view.
+    """
+    for tok in _SPECIAL_TOKENS:
+        if tok in text:
+            text = text.replace(tok, f"{_ANSI_YELLOW}{tok}{_ANSI_RESET}")
+    return text
 
 
 @CALLBACK_REGISTRY.register("sample")
 class SampleGenerationCallback(Callback):
     """Generates completions for a fixed list of prompts every N steps.
 
-    Defaults: greedy sampling (deterministic, reproducible across runs)
-    and `stop_on_eos=False` (always emit the full `max_new_tokens`). The
-    no-stop default exists because undertrained models predict `<eos>`
+    Defaults: greedy sampling (deterministic, reproducible across runs),
+    `stop_on_eos=False` (always emit the full `max_new_tokens`), and
+    `colorize=True` (ANSI-yellow special tokens for visibility in terminals
+    and ANSI-aware viewers).
+
+    The no-stop default exists because undertrained models predict `<eos>`
     very early — stopping there hides what the model is actually learning
     and makes early samples look empty. Pass `stop_on_eos: true` once the
     model is mature enough that EOS-stopping reflects real completion.
 
     Configure `strategy: top_k` (or `top_p`, `temperature`) and pass
     strategy kwargs alongside (e.g., `k: 50`, `temperature: 0.8`).
+
+    Disable `colorize` if you primarily view samples.txt in a plain text
+    editor (escape sequences will appear as literal characters there).
     """
 
     def __init__(
@@ -33,6 +72,7 @@ class SampleGenerationCallback(Callback):
         max_new_tokens: int = 64,
         strategy: str = "greedy",
         stop_on_eos: bool = False,
+        colorize: bool = True,
         **strategy_kwargs: Any,
     ) -> None:
         if every < 1:
@@ -42,6 +82,7 @@ class SampleGenerationCallback(Callback):
         self.max_new_tokens = max_new_tokens
         self.strategy_name = strategy
         self.stop_on_eos = stop_on_eos
+        self.colorize = colorize
         self.strategy_kwargs = strategy_kwargs
         self._text_gen: TextGenerator | None = None
         self._fh: IO[str] | None = None
@@ -93,6 +134,8 @@ class SampleGenerationCallback(Callback):
             skip_special=False,
         )
         for prompt, completion in zip(self.prompts, completions, strict=True):
+            if self.colorize:
+                completion = _colorize_specials(completion)
             self._fh.write(f"PROMPT: {prompt}\n")
             self._fh.write(f"COMPLETION: {completion}\n\n")
         self._fh.flush()

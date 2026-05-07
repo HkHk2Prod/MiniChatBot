@@ -1,0 +1,69 @@
+# One-shot CPU smoketest — same 1.3M model as debug_shakespeare but 1000 steps.
+# Purpose: verify loss continues dropping past step 200 (rules out a "stuck"
+# training loop). Safe to delete after a clean run.
+
+run_name: cpu_smoketest
+output_dir: runs
+seed: 42
+device: cpu                  # force CPU regardless of GPU availability
+
+model:
+  type: transformer
+  vocab_size: 2048
+  max_seq_len: 256
+  n_layers: 4
+  n_heads: 4
+  d_model: 128
+  d_ff: 512
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/shakespeare/tokenizer.json
+
+data:
+  type: pretrain
+  train_path: data/shakespeare/train.bin
+  val_path: data/shakespeare/val.bin
+  seq_len: 256
+  num_workers: 0
+
+optim:
+  lr: 3.0e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 100
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 1000
+  batch_size: 8
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: fp32
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 50
+  - type: jsonl
+  - type: eval
+    params:
+      every: 250
+  - type: sample
+    params:
+      every: 500
+      prompts:
+        - "ROMEO:"
+        - "To be, or not to be"
+      max_new_tokens: 48
+  - type: checkpoint
+    params:
+      every: 1000
+      keep_top_k: 1
