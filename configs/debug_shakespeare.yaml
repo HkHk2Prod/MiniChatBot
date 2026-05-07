@@ -1,0 +1,84 @@
+# Debug pretrain config — Tiny Shakespeare, debugger-friendly.
+#
+# Tuned for stepping through `scripts/pretrain.py` in VS Code:
+#   - tiny model (~1M params), short seq_len, small vocab    -> fast forward/backward
+#   - precision: fp32                                        -> readable tensor values, no autocast surprises
+#   - num_workers: 0                                         -> single-process DataLoader, debugger can step in
+#   - compile: false                                         -> no torch.compile graphs to obscure stack traces
+#   - max_steps: 200 + frequent logging                      -> see every step, finish in seconds
+#
+# One-time data prep (~30 seconds total on tiny_shakespeare):
+#   python scripts/download_corpus.py --source tiny_shakespeare --output data/shakespeare/corpus.jsonl
+#   python scripts/train_tokenizer.py --corpus data/shakespeare/corpus.jsonl --jsonl-key text \
+#       --output data/shakespeare/tokenizer.json --vocab-size 2048
+#   python scripts/prepare_data.py --corpus data/shakespeare/corpus.jsonl --jsonl-key text \
+#       --tokenizer data/shakespeare/tokenizer.json --output data/shakespeare/ --val-frac 0.05
+#
+# Then launch:
+#   python scripts/pretrain.py --config configs/debug_shakespeare.yaml
+
+run_name: debug_shakespeare
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 2048
+  max_seq_len: 256
+  n_layers: 4
+  n_heads: 4
+  d_model: 128
+  d_ff: 512
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/shakespeare/tokenizer.json
+
+data:
+  type: pretrain
+  train_path: data/shakespeare/train.bin
+  val_path: data/shakespeare/val.bin
+  seq_len: 256
+  num_workers: 0           # keep DataLoader in-process for the debugger
+
+optim:
+  lr: 3.0e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 20
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 200
+  batch_size: 8
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: fp32          # fp32 for debugging; switch to bf16 for real runs
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 5
+  - type: jsonl
+  - type: eval
+    params:
+      every: 50
+  - type: sample
+    params:
+      every: 100
+      prompts:
+        - "ROMEO:"
+        - "To be, or not to be"
+      max_new_tokens: 48
+  - type: checkpoint        # one final ckpt at end of training so generate.py has something to load
+    params:
+      every: 200
+      keep_top_k: 1

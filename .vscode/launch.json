@@ -1,0 +1,172 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "1. Download corpus: tiny_shakespeare",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/download_corpus.py",
+      "args": [
+        "--source", "tiny_shakespeare",
+        "--output", "data/shakespeare/corpus.jsonl"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "2. Train tokenizer: shakespeare",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/train_tokenizer.py",
+      "args": [
+        "--corpus", "data/shakespeare/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--output", "data/shakespeare/tokenizer.json",
+        "--vocab-size", "2048"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "3. Prepare data: shakespeare",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/prepare_data.py",
+      "args": [
+        "--corpus", "data/shakespeare/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--tokenizer", "data/shakespeare/tokenizer.json",
+        "--output", "data/shakespeare/",
+        "--val-frac", "0.05"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "4. [1.3M] Pretrain: debug_shakespeare",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/pretrain.py",
+      "args": ["--config", "configs/debug_shakespeare.yaml"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "4b. [10M] Pretrain: shakespeare (~10min on RTX 4080)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/pretrain.py",
+      "args": ["--config", "configs/pretrain_shakespeare.yaml"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Generate: latest debug_shakespeare run",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/generate.py",
+      "args": [
+        "--run-name", "debug_shakespeare",
+        "--max-new-tokens", "80",
+        "ROMEO:",
+        "To be, or not to be",
+        "HAMLET:"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Generate: latest pretrain_shakespeare run",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/generate.py",
+      "args": [
+        "--run-name", "pretrain_shakespeare",
+        "--max-new-tokens", "120",
+        "--strategy", "top_p",
+        "--top-p", "0.9",
+        "--temperature", "0.8",
+        "ROMEO:",
+        "HAMLET:",
+        "To be, or not to be"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Generate: latest run (any)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/generate.py",
+      "args": [
+        "--max-new-tokens", "100",
+        "Once upon a time"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "5. Download corpus: tiny_stories (100k cap)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/download_corpus.py",
+      "args": [
+        "--source", "tiny_stories",
+        "--output", "data/tinystories/corpus.jsonl",
+        "--max-docs", "100000"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "6. Train tokenizer: tinystories",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/train_tokenizer.py",
+      "args": [
+        "--corpus", "data/tinystories/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--output", "data/tinystories/tokenizer.json",
+        "--vocab-size", "8000"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "7. Prepare data: tinystories",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/prepare_data.py",
+      "args": [
+        "--corpus", "data/tinystories/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--tokenizer", "data/tinystories/tokenizer.json",
+        "--output", "data/tinystories/",
+        "--val-frac", "0.01"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "8. [29M] Pretrain: tinystories (~2-4h on RTX 4080)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/pretrain.py",
+      "args": ["--config", "configs/pretrain_tinystories.yaml"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ]
+}

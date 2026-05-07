@@ -1,0 +1,63 @@
+# MiniChatBot — pyproject.toml
+#
+# Installation note (CUDA):
+#   PyPI ships CPU-only torch wheels. For training on a CUDA GPU, install torch
+#   from PyTorch's CUDA index BEFORE running `pip install -e .`:
+#
+#       pip install torch --index-url https://download.pytorch.org/whl/cu124
+#
+#   Or just run scripts/setup.ps1 (Windows) / scripts/setup.sh (POSIX) — they
+#   default to CUDA. Pass -Cpu / USE_CPU=1 for the CPU fallback.
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minichatbot"
+version = "0.0.1"
+description = "Small ChatGPT-style language model trainable on a personal PC. Pretraining, SFT, and RL."
+requires-python = ">=3.10"
+readme = "README.md"
+license = { file = "LICENSE" }
+
+dependencies = [
+    "torch>=2.2",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "tokenizers>=0.15",
+]
+
+[project.optional-dependencies]
+tensorboard = ["tensorboard>=2.15"]
+wandb = ["wandb>=0.16"]
+data = [
+    "datasets>=2.20",
+    "huggingface_hub>=0.20",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "mypy>=1.8",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["minichatbot*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# __init__.py files re-export names from submodules (often after defining a
+# registry first), which trips F401 (unused import) and E402 (module-level
+# import not at top). The pattern is intentional — silence both.
+"**/__init__.py" = ["E402", "F401"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

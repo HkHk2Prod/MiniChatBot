@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash -n \"g:/My Drive/GitHub/MiniChatBot/scripts/setup.sh\")",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}

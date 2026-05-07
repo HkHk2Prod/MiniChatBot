@@ -1,0 +1,80 @@
+# Real Shakespeare training run — produces coherent-ish Shakespearean text.
+#
+# Mirrors Karpathy's nanoGPT-shakespeare-char defaults: ~10M params, 5K steps.
+# Reuses the same data/shakespeare/ artifacts as the debug config (run those
+# data-prep steps first). Time budget: ~5-10 min on RTX 4080, ~30-60 min on CPU.
+#
+# Position in the ladder:
+#   debug_shakespeare.yaml (1.3M, debugger)
+#     -> pretrain_shakespeare.yaml (this, 10M, real but small corpus)
+#     -> pretrain_tinystories.yaml (29M, real corpus, hours)
+#
+# Prerequisite: run the shakespeare data-prep pipeline first (launch entries 1-3),
+# then this config can train without re-doing data prep.
+
+run_name: pretrain_shakespeare
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 2048
+  max_seq_len: 256
+  n_layers: 6
+  n_heads: 6
+  d_model: 384
+  d_ff: 1536
+  dropout: 0.1                 # small dropout helps on a small corpus
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/shakespeare/tokenizer.json
+
+data:
+  type: pretrain
+  train_path: data/shakespeare/train.bin
+  val_path: data/shakespeare/val.bin
+  seq_len: 256
+  num_workers: 2
+
+optim:
+  lr: 3.0e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 100
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 5000
+  batch_size: 32
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16              # fp32 fallback if your GPU lacks bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 50
+  - type: jsonl
+  - type: eval
+    params:
+      every: 250
+  - type: sample
+    params:
+      every: 500
+      prompts:
+        - "ROMEO:"
+        - "HAMLET:"
+        - "To be, or not to be"
+      max_new_tokens: 96
+  - type: checkpoint
+    params:
+      every: 1000
+      keep_top_k: 2

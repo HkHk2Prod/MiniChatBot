@@ -1,0 +1,94 @@
+# Mid-sized GPU run — TinyStories, ~25M params, bf16, ~2-4 hours on RTX 4080.
+#
+# Position in the ladder:
+#   debug_shakespeare.yaml -> pretrain_tinystories.yaml (this) -> pretrain_small.yaml / fineweb runs
+#
+# Goal: validate the full pipeline at non-trivial scale without burning a full
+# day. Big enough that loss curves, sample quality, and tok/s metrics become
+# meaningful; small enough to iterate on.
+#
+# Sizing rationale (TinyStories paper sweet spot for coherent narratives):
+#   ~25M params (6L, 8H, d_model=512, d_ff=2048)
+#   8K vocab — TinyStories deliberately uses a limited vocabulary
+#   seq_len 512 — most stories fit comfortably below this
+#   batch 32, bf16 -> fits ~14GB VRAM on a 16GB card with margin
+#   10K steps × 32 × 512 = 164M tokens trained (sub-epoch on 100K-doc subset)
+#
+# One-time data prep (~5-15 min depending on disk + HF cache):
+#   python scripts/download_corpus.py --source tiny_stories \
+#       --output data/tinystories/corpus.jsonl --max-docs 100000
+#   python scripts/train_tokenizer.py --corpus data/tinystories/corpus.jsonl --jsonl-key text \
+#       --output data/tinystories/tokenizer.json --vocab-size 8000
+#   python scripts/prepare_data.py --corpus data/tinystories/corpus.jsonl --jsonl-key text \
+#       --tokenizer data/tinystories/tokenizer.json --output data/tinystories/ --val-frac 0.01
+#
+# Then launch:
+#   python scripts/pretrain.py --config configs/pretrain_tinystories.yaml
+
+run_name: pretrain_tinystories
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 8000
+  max_seq_len: 512
+  n_layers: 6
+  n_heads: 8
+  d_model: 512
+  d_ff: 2048
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/tinystories/tokenizer.json
+
+data:
+  type: pretrain
+  train_path: data/tinystories/train.bin
+  val_path: data/tinystories/val.bin
+  seq_len: 512
+  num_workers: 4
+
+optim:
+  lr: 6.0e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 200
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 10000
+  batch_size: 32
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16
+  compile: false             # flip to true once you trust the run; ~10-20% faster
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 50
+  - type: jsonl
+  - type: tensorboard
+  - type: checkpoint
+    params:
+      every: 1000
+      keep_top_k: 3
+  - type: eval
+    params:
+      every: 500
+  - type: sample
+    params:
+      every: 1000
+      prompts:
+        - "Once upon a time, there was a"
+        - "The little girl"
+        - "One day, a"
+      max_new_tokens: 96
