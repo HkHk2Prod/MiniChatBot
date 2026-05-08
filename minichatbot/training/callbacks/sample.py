@@ -27,6 +27,13 @@ class SampleGenerationCallback(Callback):
 
     Configure `strategy: top_k` (or `top_p`, `temperature`) and pass
     strategy kwargs alongside (e.g., `k: 50`, `temperature: 0.8`).
+
+    For SFT/chat-tuned models, set `chat_template: true`. Each prompt is
+    then wrapped as a single-turn user message (`<|im_start|>user\\n...
+    <|im_end|>\\n<|im_start|>assistant\\n`) before sampling, so the model
+    is in its trained-on input distribution and emits an assistant reply
+    instead of falling back to raw text continuation. With this enabled,
+    `stop_on_eos` also stops at `<|im_end|>` (chat turn end).
     """
 
     def __init__(
@@ -36,6 +43,7 @@ class SampleGenerationCallback(Callback):
         max_new_tokens: int = 64,
         strategy: str = "greedy",
         stop_on_eos: bool = False,
+        chat_template: bool = False,
         **strategy_kwargs: Any,
     ) -> None:
         if every < 1:
@@ -45,12 +53,15 @@ class SampleGenerationCallback(Callback):
         self.max_new_tokens = max_new_tokens
         self.strategy_name = strategy
         self.stop_on_eos = stop_on_eos
+        self.chat_template = chat_template
         self.strategy_kwargs = strategy_kwargs
         self._text_gen: TextGenerator | None = None
         self._fh: IO[str] | None = None
 
     def _build_text_generator(self, ctx: CallbackContext) -> TextGenerator:
         from minichatbot.inference.strategies import SAMPLING_REGISTRY
+        from minichatbot.tokenizer.bpe import IM_END_TOKEN
+
         strat_cls = SAMPLING_REGISTRY[self.strategy_name]
         # Default: do NOT stop on <eos> for training samples. An undertrained
         # model collapses to predicting <eos> within a few tokens (it's one of
@@ -58,12 +69,38 @@ class SampleGenerationCallback(Callback):
         # token" look like the model learned nothing — when really it just
         # short-circuited. Forcing the full max_new_tokens shows the actual
         # token distribution the model has converged to.
-        eos_id = ctx.tokenizer.eos_id if self.stop_on_eos else None
+        # In chat-template mode, "stop_on_eos" means stop at <|im_end|> (the
+        # end-of-turn marker), not the pretrain-corpus EOS.
+        eos_id: int | None = None
+        if self.stop_on_eos:
+            eos_id = (
+                ctx.tokenizer.special_token_id(IM_END_TOKEN)
+                if self.chat_template
+                else ctx.tokenizer.eos_id
+            )
         gen = Generator(
             strategy=strat_cls(**self.strategy_kwargs),
             eos_id=eos_id,
         )
         return TextGenerator(model=ctx.model, tokenizer=ctx.tokenizer, generator=gen)
+
+    def _do_generate(self) -> list[str]:
+        """Run generation for the configured prompts, picking the chat-template
+        path when enabled and the raw path otherwise. Returns one decoded
+        completion per prompt."""
+        assert self._text_gen is not None
+        if self.chat_template:
+            return self._text_gen.generate_chat(
+                self.prompts,
+                max_new_tokens=self.max_new_tokens,
+                skip_special=False,
+            )
+        return self._text_gen.generate(
+            self.prompts,
+            max_new_tokens=self.max_new_tokens,
+            return_only_completion=True,
+            skip_special=False,
+        )
 
     def on_train_start(self, ctx: CallbackContext) -> None:
         if not self.prompts or ctx.tokenizer is None:
@@ -107,12 +144,7 @@ class SampleGenerationCallback(Callback):
         best_step = state.get("step", "?")
 
         self._fh.write(f"\n=== BEST MODEL (step {best_step}) ===\n")
-        completions = self._text_gen.generate(
-            self.prompts,
-            max_new_tokens=self.max_new_tokens,
-            return_only_completion=True,
-            skip_special=False,
-        )
+        completions = self._do_generate()
         for prompt, completion in zip(self.prompts, completions, strict=True):
             self._fh.write(f"PROMPT: {prompt}\n")
             self._fh.write(f"COMPLETION: {completion}\n\n")
@@ -122,12 +154,7 @@ class SampleGenerationCallback(Callback):
         assert self._text_gen is not None
         assert self._fh is not None
         self._fh.write(f"\n=== step {ctx.step} ===\n")
-        completions = self._text_gen.generate(
-            self.prompts,
-            max_new_tokens=self.max_new_tokens,
-            return_only_completion=True,
-            skip_special=False,
-        )
+        completions = self._do_generate()
         for prompt, completion in zip(self.prompts, completions, strict=True):
             self._fh.write(f"PROMPT: {prompt}\n")
             self._fh.write(f"COMPLETION: {completion}\n\n")

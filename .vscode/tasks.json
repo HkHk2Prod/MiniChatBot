@@ -1,0 +1,222 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "[1.3M+10M] Data: download shakespeare",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/download_corpus.py",
+        "--source", "tiny_shakespeare",
+        "--output", "data/shakespeare/corpus.jsonl"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M+10M] Data: tokenizer shakespeare",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/train_tokenizer.py",
+        "--corpus", "data/shakespeare/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--output", "data/shakespeare/tokenizer.json",
+        "--vocab-size", "2048"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M+10M] Data: prepare shakespeare",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/prepare_data.py",
+        "--corpus", "data/shakespeare/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--tokenizer", "data/shakespeare/tokenizer.json",
+        "--output", "data/shakespeare/",
+        "--val-frac", "0.05"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M+10M] Data: ALL shakespeare (download → tokenizer → prepare)",
+      "dependsOn": [
+        "[1.3M+10M] Data: download shakespeare",
+        "[1.3M+10M] Data: tokenizer shakespeare",
+        "[1.3M+10M] Data: prepare shakespeare"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] Data: download tinystories (100k cap)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/download_corpus.py",
+        "--source", "tiny_stories",
+        "--output", "data/tinystories/corpus.jsonl",
+        "--max-docs", "100000"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] Data: tokenizer tinystories",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/train_tokenizer.py",
+        "--corpus", "data/tinystories/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--output", "data/tinystories/tokenizer.json",
+        "--vocab-size", "8000"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] Data: prepare tinystories",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/prepare_data.py",
+        "--corpus", "data/tinystories/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--tokenizer", "data/tinystories/tokenizer.json",
+        "--output", "data/tinystories/",
+        "--val-frac", "0.01"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] Data: ALL tinystories (download → tokenizer → prepare)",
+      "dependsOn": [
+        "[29M] Data: download tinystories (100k cap)",
+        "[29M] Data: tokenizer tinystories",
+        "[29M] Data: prepare tinystories"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] Pretrain: debug_shakespeare",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": ["scripts/pretrain.py", "--config", "configs/debug_shakespeare.yaml"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[10M] Pretrain: shakespeare (~10min on RTX 4080)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": ["scripts/pretrain.py", "--config", "configs/pretrain_shakespeare.yaml"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] Pretrain: tinystories (~2-4h on RTX 4080)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": ["scripts/pretrain.py", "--config", "configs/pretrain_tinystories.yaml"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] SFT: debug_shakespeare (synthetic smoketest data)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/sft.py",
+        "--config", "configs/sft_smoketest.yaml",
+        "--from-pretrained", "auto",
+        "--pretrain-run-name", "debug_shakespeare"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[10M] SFT: shakespeare (synthetic smoketest data)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/sft.py",
+        "--config", "configs/sft_shakespeare.yaml",
+        "--from-pretrained", "auto",
+        "--pretrain-run-name", "pretrain_shakespeare"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] SFT: tinystories (synthetic smoketest data)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/sft.py",
+        "--config", "configs/sft_tinystories.yaml",
+        "--from-pretrained", "auto",
+        "--pretrain-run-name", "pretrain_tinystories"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] Chat: latest sft_smoketest run",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/chat.py",
+        "--run-name", "sft_smoketest",
+        "--max-new-tokens", "64"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[10M] Chat: latest sft_shakespeare run",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/chat.py",
+        "--run-name", "sft_shakespeare",
+        "--max-new-tokens", "128"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] Chat: latest sft_tinystories run",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/chat.py",
+        "--run-name", "sft_tinystories",
+        "--max-new-tokens", "200"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -2,71 +2,40 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "1. Download corpus: tiny_shakespeare",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/download_corpus.py",
-      "args": [
-        "--source", "tiny_shakespeare",
-        "--output", "data/shakespeare/corpus.jsonl"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "justMyCode": false
-    },
-    {
-      "name": "2. Train tokenizer: shakespeare",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/train_tokenizer.py",
-      "args": [
-        "--corpus", "data/shakespeare/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--output", "data/shakespeare/tokenizer.json",
-        "--vocab-size", "2048"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "justMyCode": false
-    },
-    {
-      "name": "3. Prepare data: shakespeare",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/prepare_data.py",
-      "args": [
-        "--corpus", "data/shakespeare/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--tokenizer", "data/shakespeare/tokenizer.json",
-        "--output", "data/shakespeare/",
-        "--val-frac", "0.05"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "justMyCode": false
-    },
-    {
-      "name": "4. [1.3M] Pretrain: debug_shakespeare",
+      "name": "[1.3M] Pretrain: debug_shakespeare",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/pretrain.py",
       "args": ["--config", "configs/debug_shakespeare.yaml"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "justMyCode": false
+      "justMyCode": false,
+      "presentation": { "group": "1-pretrain", "order": 1 }
     },
     {
-      "name": "4b. [10M] Pretrain: shakespeare (~10min on RTX 4080)",
+      "name": "[10M] Pretrain: shakespeare (~10min on RTX 4080)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/pretrain.py",
       "args": ["--config", "configs/pretrain_shakespeare.yaml"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "justMyCode": false
+      "justMyCode": false,
+      "presentation": { "group": "1-pretrain", "order": 2 }
     },
     {
-      "name": "Generate: latest debug_shakespeare run",
+      "name": "[29M] Pretrain: tinystories (~2-4h on RTX 4080)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/pretrain.py",
+      "args": ["--config", "configs/pretrain_tinystories.yaml"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "presentation": { "group": "1-pretrain", "order": 3 }
+    },
+    {
+      "name": "[1.3M] Generate: latest debug_shakespeare run",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/generate.py",
@@ -79,10 +48,11 @@
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "justMyCode": false
+      "justMyCode": false,
+      "presentation": { "group": "2-inference", "order": 1 }
     },
     {
-      "name": "Generate: latest pretrain_shakespeare run",
+      "name": "[10M] Generate: latest pretrain_shakespeare run",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/generate.py",
@@ -98,7 +68,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "justMyCode": false
+      "justMyCode": false,
+      "presentation": { "group": "2-inference", "order": 2 }
     },
     {
       "name": "Generate: latest run (any)",
@@ -111,62 +82,22 @@
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "justMyCode": false
+      "justMyCode": false,
+      "presentation": { "group": "2-inference", "order": 3 }
     },
     {
-      "name": "5. Download corpus: tiny_stories (100k cap)",
+      "name": "Chat: latest sft_smoketest run",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/download_corpus.py",
+      "program": "${workspaceFolder}/scripts/chat.py",
       "args": [
-        "--source", "tiny_stories",
-        "--output", "data/tinystories/corpus.jsonl",
-        "--max-docs", "100000"
+        "--run-name", "sft_smoketest",
+        "--max-new-tokens", "64"
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "justMyCode": false
-    },
-    {
-      "name": "6. Train tokenizer: tinystories",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/train_tokenizer.py",
-      "args": [
-        "--corpus", "data/tinystories/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--output", "data/tinystories/tokenizer.json",
-        "--vocab-size", "8000"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "justMyCode": false
-    },
-    {
-      "name": "7. Prepare data: tinystories",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/prepare_data.py",
-      "args": [
-        "--corpus", "data/tinystories/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--tokenizer", "data/tinystories/tokenizer.json",
-        "--output", "data/tinystories/",
-        "--val-frac", "0.01"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "justMyCode": false
-    },
-    {
-      "name": "8. [29M] Pretrain: tinystories (~2-4h on RTX 4080)",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/pretrain.py",
-      "args": ["--config", "configs/pretrain_tinystories.yaml"],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "justMyCode": false
+      "justMyCode": false,
+      "presentation": { "group": "2-inference", "order": 4 }
     }
   ]
 }

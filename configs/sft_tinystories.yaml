@@ -1,0 +1,88 @@
+# SFT on top of the 29M tinystories pretrain.
+#
+# Reuses the synthetic Q&A smoketest data — meaningful only as a pipeline
+# test at the 29M scale; tinystories' vocab is general enough that the
+# tokenizer encodes the simple Q&A prompts fine. Swap in a real chat
+# corpus (alpaca, LIMA, ShareGPT) for actual instruction tuning.
+#
+# The model: block mirrors pretrain_tinystories.yaml so the pretrained
+# checkpoint loads cleanly.
+#
+# Prereqs:
+#   1. A pretrain_tinystories run with a ckpt_best.pt.
+#   2. The tinystories tokenizer.
+#   3. The synthetic SFT data:
+#        python scripts/make_sft_smoketest_data.py
+#
+# Then launch:
+#   python scripts/sft.py --config configs/sft_tinystories.yaml \
+#       --from-pretrained auto --pretrain-run-name pretrain_tinystories
+
+run_name: sft_tinystories
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 8000             # match pretrain_tinystories
+  max_seq_len: 512
+  n_layers: 6
+  n_heads: 8
+  d_model: 512
+  d_ff: 2048
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/tinystories/tokenizer.json
+
+data:
+  type: sft
+  train_path: data/sft_smoketest/train.jsonl
+  val_path: data/sft_smoketest/val.jsonl
+  seq_len: 128                 # Q&A pairs are short — no need for the 512 pretrain ctx
+  num_workers: 0
+
+optim:
+  lr: 5.0e-5                   # smaller than pretrain (6e-4); finetuning a learned init
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 50
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 500
+  batch_size: 16
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 25
+  - type: jsonl
+  - type: eval
+    params:
+      every: 100
+  - type: sample
+    params:
+      every: 100
+      chat_template: true
+      stop_on_eos: true
+      prompts:
+        - "What is 3 + 4?"
+        - "Hello"
+        - "Repeat: cat"
+      max_new_tokens: 32
+  - type: checkpoint
+    params:
+      every: 250
+      keep_last_k: 1

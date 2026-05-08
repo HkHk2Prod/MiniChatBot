@@ -52,11 +52,17 @@ def find_latest_checkpoint_in(
     output_dir: str | Path = "runs",
     run_name: str | None = None,
 ) -> Path | None:
-    """Walk `output_dir`, pick the latest run, return its latest checkpoint."""
-    run = find_latest_run(output_dir, run_name=run_name)
-    if run is None:
-        return None
-    return find_latest_checkpoint(run)
+    """Walk runs newest-first; return the first run's latest checkpoint.
+
+    Falls through runs that have no checkpoints yet (e.g., a crashed run
+    that never reached its first periodic save). Returns None only if no
+    run under `output_dir` has any checkpoint at all.
+    """
+    for run in _runs_newest_first(output_dir, run_name):
+        ckpt = find_latest_checkpoint(run)
+        if ckpt is not None:
+            return ckpt
+    return None
 
 
 def find_best_checkpoint(run_dir: str | Path) -> Path | None:
@@ -74,8 +80,27 @@ def find_best_checkpoint_in(
     output_dir: str | Path = "runs",
     run_name: str | None = None,
 ) -> Path | None:
-    """Walk `output_dir`, pick the latest run, return its best checkpoint."""
-    run = find_latest_run(output_dir, run_name=run_name)
-    if run is None:
-        return None
-    return find_best_checkpoint(run)
+    """Walk runs newest-first; return the first one with a `ckpt_best.pt`.
+
+    Falls through runs that ran without eval data (no best tracked) or
+    that crashed before the first eval. Returns None only if no run has
+    a best checkpoint.
+    """
+    for run in _runs_newest_first(output_dir, run_name):
+        ckpt = find_best_checkpoint(run)
+        if ckpt is not None:
+            return ckpt
+    return None
+
+
+def _runs_newest_first(
+    output_dir: str | Path,
+    run_name: str | None,
+) -> list[Path]:
+    out = Path(output_dir)
+    if not out.exists():
+        return []
+    runs = [p for p in out.iterdir() if p.is_dir()]
+    if run_name is not None:
+        runs = [p for p in runs if p.name.endswith(f"_{run_name}")]
+    return sorted(runs, key=lambda p: p.name, reverse=True)
