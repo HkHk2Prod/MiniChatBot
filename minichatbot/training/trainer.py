@@ -188,7 +188,7 @@ class Trainer:
                 k: v.to(self.device, non_blocking=True) for k, v in batch.items()
             }
             last_batch = batch
-            with self._autocast():
+            with self.autocast():
                 output = self.model(batch["input_ids"])
                 actual_loss = self.loss(output, batch)
                 scaled = actual_loss / accum
@@ -228,7 +228,14 @@ class Trainer:
         ctx.lr = float(self.scheduler.get_last_lr()[0])
         ctx.tokens_per_sec = tokens / step_dt if step_dt > 0 else None
 
-    def _autocast(self):
+    def autocast(self):
+        """Return the autocast context that wraps every train forward.
+
+        Public so callbacks (eval, sample, etc.) can run their own
+        forwards under the same precision regime as training — keeps
+        eval loss comparable to train loss and avoids fp32-on-bf16-model
+        slowdowns.
+        """
         if not self.use_autocast:
             return nullcontext()
         return torch.autocast(device_type=self.device.type, dtype=self.dtype)

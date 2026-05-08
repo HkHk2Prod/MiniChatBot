@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import time
+from contextlib import nullcontext
 
 import torch
 
@@ -26,9 +27,14 @@ class EvalCallback(Callback):
     def __init__(
         self,
         every: int = 500,
-        max_batches: int | None = None,
+        max_batches: int | None = 100,
         eval_at_start: bool = True,
     ) -> None:
+        # max_batches default: 100 batches is enough for a stable val-loss
+        # estimate even at batch_size 8 (800 samples) and orders of magnitude
+        # cheaper than a full sweep on pretrain-style overlapping-window
+        # datasets where len(val_ds) ≈ tokens-in-val-bin. Pass `null` in YAML
+        # to opt back into a full pass when you actually want one.
         self.every = every
         self.max_batches = max_batches
         self.eval_at_start = eval_at_start
@@ -56,12 +62,17 @@ class EvalCallback(Callback):
 
     def _run(self, ctx: CallbackContext) -> None:
         model = ctx.model
+        # Mirror the train loop's autocast: under bf16/fp16 training, an
+        # un-autocasted fp32 eval forward is 2-3x slower per batch on
+        # Ampere/Ada and produces a loss measured in a different precision
+        # regime than the train loss it's meant to compare against.
+        autocast = ctx.trainer.autocast() if ctx.trainer is not None else nullcontext()
         with eval_mode(model):
             total = 0.0
             n = 0
             device = next(model.parameters()).device
             t0 = time.monotonic()
-            with torch.no_grad():
+            with torch.no_grad(), autocast:
                 for i, batch in enumerate(ctx.val_loader):
                     if self.max_batches is not None and i >= self.max_batches:
                         break
