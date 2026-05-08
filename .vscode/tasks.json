@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "[1.3M+10M] Data: download shakespeare",
+      "label": "[1.3M+10M] [1a] Data: download shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -15,7 +15,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[1.3M+10M] Data: tokenizer shakespeare",
+      "label": "[1.3M+10M] [1b] Data: tokenizer shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -30,7 +30,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[1.3M+10M] Data: prepare shakespeare",
+      "label": "[1.3M+10M] [1c] Data: prepare shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -46,17 +46,18 @@
       "problemMatcher": []
     },
     {
-      "label": "[1.3M+10M] Data: ALL shakespeare (download → tokenizer → prepare)",
+      "label": "[1.3M+10M] [1] Data: ALL shakespeare (download → tokenizer → prepare → SFT smoketest)",
       "dependsOn": [
-        "[1.3M+10M] Data: download shakespeare",
-        "[1.3M+10M] Data: tokenizer shakespeare",
-        "[1.3M+10M] Data: prepare shakespeare"
+        "[1.3M+10M] [1a] Data: download shakespeare",
+        "[1.3M+10M] [1b] Data: tokenizer shakespeare",
+        "[1.3M+10M] [1c] Data: prepare shakespeare",
+        "[1.3M+10M] [1d] Data: generate SFT smoketest dataset (synthetic Q&A)"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
     },
     {
-      "label": "[29M] Data: download tinystories (100k cap)",
+      "label": "[29M] [1a] Data: download tinystories (100k cap)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -70,7 +71,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] Data: tokenizer tinystories",
+      "label": "[29M] [1b] Data: tokenizer tinystories",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -85,7 +86,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] Data: prepare tinystories",
+      "label": "[29M] [1c] Data: prepare tinystories",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -101,17 +102,40 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] Data: ALL tinystories (download → tokenizer → prepare)",
+      "label": "[29M] [1] Data: ALL tinystories (download → tokenizer → prepare → alpaca-cleaned)",
       "dependsOn": [
-        "[29M] Data: download tinystories (100k cap)",
-        "[29M] Data: tokenizer tinystories",
-        "[29M] Data: prepare tinystories"
+        "[29M] [1a] Data: download tinystories (100k cap)",
+        "[29M] [1b] Data: tokenizer tinystories",
+        "[29M] [1c] Data: prepare tinystories",
+        "[29M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
     },
     {
-      "label": "[1.3M] Pretrain: debug_shakespeare",
+      "label": "[1.3M+10M] [1d] Data: generate SFT smoketest dataset (synthetic Q&A)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": ["scripts/make_sft_smoketest_data.py"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/download_sft_data.py",
+        "--source", "alpaca_cleaned",
+        "--output-dir", "data/alpaca"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] [2] Pretrain: debug_shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": ["scripts/pretrain.py", "--config", "configs/debug_shakespeare.yaml"],
@@ -120,7 +144,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[10M] Pretrain: shakespeare (~10min on RTX 4080)",
+      "label": "[10M] [2] Pretrain: shakespeare (~10min on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": ["scripts/pretrain.py", "--config", "configs/pretrain_shakespeare.yaml"],
@@ -129,7 +153,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] Pretrain: tinystories (~2-4h on RTX 4080)",
+      "label": "[29M] [2] Pretrain: tinystories (~2-4h on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": ["scripts/pretrain.py", "--config", "configs/pretrain_tinystories.yaml"],
@@ -138,7 +162,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[1.3M] SFT: debug_shakespeare (synthetic smoketest data)",
+      "label": "[1.3M] [3] SFT: debug_shakespeare (synthetic smoketest data)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -152,7 +176,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[10M] SFT: shakespeare (synthetic smoketest data)",
+      "label": "[10M] [3] SFT: shakespeare (synthetic smoketest data)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -166,7 +190,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] SFT: tinystories (synthetic smoketest data)",
+      "label": "[29M] [3] SFT: tinystories (alpaca-cleaned, ~6K steps ≈ 2 epochs)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -180,7 +204,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[1.3M] Chat: latest sft_smoketest run",
+      "label": "[1.3M] [4] Chat: latest sft_smoketest run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -193,7 +217,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[10M] Chat: latest sft_shakespeare run",
+      "label": "[10M] [4] Chat: latest sft_shakespeare run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -206,7 +230,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] Chat: latest sft_tinystories run",
+      "label": "[29M] [4] Chat: latest sft_tinystories run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [

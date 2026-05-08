@@ -1,9 +1,11 @@
-# SFT on top of the 29M tinystories pretrain.
+# SFT on top of the 29M tinystories pretrain, using alpaca-cleaned for
+# real instruction tuning (~52K examples).
 #
-# Reuses the synthetic Q&A smoketest data — meaningful only as a pipeline
-# test at the 29M scale; tinystories' vocab is general enough that the
-# tokenizer encodes the simple Q&A prompts fine. Swap in a real chat
-# corpus (alpaca, LIMA, ShareGPT) for actual instruction tuning.
+# At 29M params the model has enough capacity to actually learn from a
+# real instruction corpus — the synthetic smoketest data (270 rows) is
+# only useful as a pipeline test at this scale. Alpaca-cleaned hits the
+# sweet spot for size: big enough to teach instruction following, small
+# enough to fit comfortably in RAM and finish in <1h on an RTX 4080.
 #
 # The model: block mirrors pretrain_tinystories.yaml so the pretrained
 # checkpoint loads cleanly.
@@ -11,8 +13,9 @@
 # Prereqs:
 #   1. A pretrain_tinystories run with a ckpt_best.pt.
 #   2. The tinystories tokenizer.
-#   3. The synthetic SFT data:
-#        python scripts/make_sft_smoketest_data.py
+#   3. Alpaca-cleaned downloaded as chat-format JSONL:
+#        python scripts/download_sft_data.py --source alpaca_cleaned \
+#            --output-dir data/alpaca
 #
 # Then launch:
 #   python scripts/sft.py --config configs/sft_tinystories.yaml \
@@ -41,9 +44,9 @@ tokenizer:
 
 data:
   type: sft
-  train_path: data/sft_smoketest/train.jsonl
-  val_path: data/sft_smoketest/val.jsonl
-  seq_len: 128                 # Q&A pairs are short — no need for the 512 pretrain ctx
+  train_path: data/alpaca/train.jsonl
+  val_path: data/alpaca/val.jsonl
+  seq_len: 512                 # alpaca responses can run long; match pretrain ctx
   num_workers: 0
 
 optim:
@@ -56,7 +59,11 @@ optim:
   min_lr_ratio: 0.1
 
 trainer:
-  max_steps: 500
+  # Alpaca-cleaned ≈ 51K train rows / batch 16 ≈ 3.2K steps/epoch. 6K steps
+  # ≈ ~2 epochs — typical SFT range; longer tends to overfit a 29M model
+  # on this size of corpus. Drop to ~3K for a single epoch if you want
+  # something faster.
+  max_steps: 6000
   batch_size: 16
   grad_accum_steps: 1
   grad_clip: 1.0
@@ -67,22 +74,22 @@ callbacks:
   - type: logfile
   - type: console
     params:
-      every: 25
+      every: 50
   - type: jsonl
   - type: eval
     params:
-      every: 100
+      every: 500
   - type: sample
     params:
-      every: 100
+      every: 500
       chat_template: true
       stop_on_eos: true
       prompts:
-        - "What is 3 + 4?"
-        - "Hello"
-        - "Repeat: cat"
-      max_new_tokens: 32
+        - "Write a short poem about the sea."
+        - "What is the capital of France?"
+        - "Explain photosynthesis in one sentence."
+      max_new_tokens: 96
   - type: checkpoint
     params:
-      every: 250
-      keep_last_k: 1
+      every: 1000
+      keep_last_k: 2
