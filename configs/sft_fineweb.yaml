@@ -1,0 +1,93 @@
+# SFT on top of the 110M fineweb pretrain, using alpaca-cleaned.
+#
+# At 110M with a base model trained on ~330M tokens of real web text,
+# this is the first SFT run that should produce something resembling
+# coherent instruction following on simple prompts. Lower expectations
+# than a "real" chat model — alpaca + this scale is roughly the floor
+# for "the chat doesn't immediately collapse into nonsense."
+#
+# The model: block mirrors pretrain_fineweb.yaml exactly so the
+# pretrained checkpoint loads cleanly.
+#
+# Prereqs:
+#   1. A pretrain_fineweb run with a ckpt_best.pt.
+#   2. The fineweb tokenizer (from the fineweb data prep pipeline).
+#   3. Alpaca-cleaned downloaded:
+#        python scripts/download_sft_data.py --source alpaca_cleaned \
+#            --output-dir data/alpaca
+#
+# Then launch:
+#   python scripts/sft.py --config configs/sft_fineweb.yaml \
+#       --from-pretrained auto --pretrain-run-name pretrain_fineweb
+
+run_name: sft_fineweb
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 32000            # match pretrain_fineweb
+  max_seq_len: 1024
+  n_layers: 12
+  n_heads: 12
+  d_model: 768
+  d_ff: 3072
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/fineweb/tokenizer.json
+
+data:
+  type: sft
+  train_path: data/alpaca/train.jsonl
+  val_path: data/alpaca/val.jsonl
+  seq_len: 1024                # alpaca responses can run long; match pretrain ctx
+  num_workers: 0
+
+optim:
+  lr: 3.0e-5                   # smaller than pretrain (3e-4); smaller still vs 29M sft (5e-5)
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 100
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  # Alpaca-cleaned ≈ 51K train rows / batch 8 ≈ 6.4K steps/epoch.
+  # 12K steps ≈ ~2 epochs. At 110M with batch 8 + grad_accum 2 (effective
+  # 16), a step is roughly 0.4-0.6s on a 4080 — total run ~1.5-2h.
+  max_steps: 12000
+  batch_size: 8                # smaller than pretrain — sft seqs hit max_seq_len more often
+  grad_accum_steps: 2          # effective batch 16
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 50
+  - type: jsonl
+  - type: eval
+    params:
+      every: 500
+  - type: sample
+    params:
+      every: 1000
+      chat_template: true
+      stop_on_eos: true
+      prompts:
+        - "Write a short poem about the sea."
+        - "What is the capital of France?"
+        - "Explain photosynthesis in one sentence."
+      max_new_tokens: 128
+  - type: checkpoint
+    params:
+      every: 2000
+      keep_last_k: 2

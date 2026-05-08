@@ -107,7 +107,64 @@
         "[29M] [1a] Data: download tinystories (100k cap)",
         "[29M] [1b] Data: tokenizer tinystories",
         "[29M] [1c] Data: prepare tinystories",
-        "[29M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)"
+        "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [1a] Data: download fineweb-edu (sample-10BT, 500K cap, ~30min)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/download_corpus.py",
+        "--source", "fineweb_edu",
+        "--output", "data/fineweb/corpus.jsonl",
+        "--subset", "sample-10BT",
+        "--max-docs", "500000"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [1b] Data: tokenizer fineweb (vocab 32K, ~10min)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/train_tokenizer.py",
+        "--corpus", "data/fineweb/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--output", "data/fineweb/tokenizer.json",
+        "--vocab-size", "32000"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [1c] Data: prepare fineweb",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/prepare_data.py",
+        "--corpus", "data/fineweb/corpus.jsonl",
+        "--jsonl-key", "text",
+        "--tokenizer", "data/fineweb/tokenizer.json",
+        "--output", "data/fineweb/",
+        "--val-frac", "0.005"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [1] Data: ALL fineweb (download → tokenizer → prepare → alpaca-cleaned)",
+      "dependsOn": [
+        "[100M] [1a] Data: download fineweb-edu (sample-10BT, 500K cap, ~30min)",
+        "[100M] [1b] Data: tokenizer fineweb (vocab 32K, ~10min)",
+        "[100M] [1c] Data: prepare fineweb",
+        "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
@@ -122,7 +179,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
+      "label": "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -157,6 +214,15 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": ["scripts/pretrain.py", "--config", "configs/pretrain_tinystories.yaml"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [2] Pretrain: fineweb-edu (~6h on RTX 4080)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": ["scripts/pretrain.py", "--config", "configs/pretrain_fineweb.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -204,6 +270,20 @@
       "problemMatcher": []
     },
     {
+      "label": "[100M] [3] SFT: fineweb-edu (alpaca-cleaned, ~12K steps ≈ 2 epochs, ~1.5-2h)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/sft.py",
+        "--config", "configs/sft_fineweb.yaml",
+        "--from-pretrained", "auto",
+        "--pretrain-run-name", "pretrain_fineweb"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
       "label": "[1.3M] [4] Chat: latest sft_smoketest run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
@@ -237,6 +317,19 @@
         "scripts/chat.py",
         "--run-name", "sft_tinystories",
         "--max-new-tokens", "200"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [4] Chat: latest sft_fineweb run",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/chat.py",
+        "--run-name", "sft_fineweb",
+        "--max-new-tokens", "256"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
