@@ -368,6 +368,19 @@
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
+    },
+    {
+      "label": "[*] [2c] Pretrain: continue from latest finished run (fresh optim, pick config)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/train/pretrain.py",
+        "--config", "${input:pretrainConfig}",
+        "--from-pretrained", "auto"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
     }
   ],
   "inputs": [
