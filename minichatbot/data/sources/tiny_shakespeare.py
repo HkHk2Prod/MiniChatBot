@@ -30,7 +30,7 @@ class TinyShakespeareSource(CorpusSource):
     def __init__(self, cache_dir: str | None = None) -> None:
         self.cache_dir = cache_dir
 
-    def iter_documents(self) -> Iterator[str]:
+    def __iter__(self) -> Iterator[str]:
         path = self._download()
         text = path.read_text(encoding="utf-8")
         for para in text.split("\n\n"):

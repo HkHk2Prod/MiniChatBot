@@ -32,7 +32,7 @@ class HFDatasetSource(CorpusSource):
         self.max_docs = max_docs
         self.cache_dir = cache_dir
 
-    def iter_documents(self) -> Iterator[str]:
+    def __iter__(self) -> Iterator[str]:
         try:
             from datasets import load_dataset
         except ImportError as e:

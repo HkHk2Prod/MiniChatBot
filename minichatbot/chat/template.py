@@ -54,7 +54,7 @@ def render_messages(
             "BPETokenizer.DEFAULT_SPECIALS)."
         )
 
-    nl_ids = tokenizer.encode("\n", add_special=False)
+    nl_ids = tokenizer.encode("\n", include_special=False)
     if not nl_ids:
         raise ValueError(
             "Tokenizer produced no tokens for '\\n' — this would break "
@@ -84,7 +84,7 @@ def render_messages(
         # Header: <|im_start|>{role}\n  -- always masked.
         tokens.append(im_start)
         is_target.append(False)
-        for tid in tokenizer.encode(role, add_special=False):
+        for tid in tokenizer.encode(role, include_special=False):
             tokens.append(tid)
             is_target.append(False)
         for tid in nl_ids:
@@ -93,7 +93,7 @@ def render_messages(
 
         # Content: only assistant content contributes to loss.
         learn = role == "assistant"
-        for tid in tokenizer.encode(content, add_special=False):
+        for tid in tokenizer.encode(content, include_special=False):
             tokens.append(tid)
             is_target.append(learn)
 
@@ -138,7 +138,7 @@ def render_prompt_for_completion(
             "Tokenizer is missing chat tokens. Train the tokenizer with "
             "<|im_start|> and <|im_end|> in special_tokens."
         )
-    nl_ids = tokenizer.encode("\n", add_special=False)
+    nl_ids = tokenizer.encode("\n", include_special=False)
 
     tokens: list[int] = []
     for turn_idx, msg in enumerate(messages):
@@ -151,15 +151,15 @@ def render_prompt_for_completion(
         if turn_idx > 0:
             tokens.extend(nl_ids)
         tokens.append(im_start)
-        tokens.extend(tokenizer.encode(role, add_special=False))
+        tokens.extend(tokenizer.encode(role, include_special=False))
         tokens.extend(nl_ids)
-        tokens.extend(tokenizer.encode(content, add_special=False))
+        tokens.extend(tokenizer.encode(content, include_special=False))
         tokens.append(im_end)
 
     # Append the assistant header. After this point the model continues
     # in "assistant content" mode until it emits its own <|im_end|>.
     tokens.extend(nl_ids)
     tokens.append(im_start)
-    tokens.extend(tokenizer.encode("assistant", add_special=False))
+    tokens.extend(tokenizer.encode("assistant", include_special=False))
     tokens.extend(nl_ids)
     return tokens

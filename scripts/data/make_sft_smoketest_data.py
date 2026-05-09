@@ -7,7 +7,7 @@ template → masked labels → trainer loop → samples) on real-looking
 data without needing to download anything.
 
 Usage:
-    python scripts/make_sft_smoketest_data.py
+    python scripts/data/make_sft_smoketest_data.py
 """
 
 from __future__ import annotations

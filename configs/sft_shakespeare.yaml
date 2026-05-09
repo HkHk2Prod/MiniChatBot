@@ -11,10 +11,10 @@
 #   2. The shakespeare tokenizer (already produced by the shakespeare data
 #      pipeline).
 #   3. The synthetic SFT data:
-#        python scripts/make_sft_smoketest_data.py
+#        python scripts/data/make_sft_smoketest_data.py
 #
 # Then launch:
-#   python scripts/sft.py --config configs/sft_shakespeare.yaml \
+#   python scripts/train/sft.py --config configs/sft_shakespeare.yaml \
 #       --from-pretrained auto --pretrain-run-name pretrain_shakespeare
 
 run_name: sft_shakespeare

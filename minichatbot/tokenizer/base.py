@@ -17,14 +17,14 @@ class Tokenizer(ABC):
     """
 
     @abstractmethod
-    def encode(self, text: str, add_special: bool = True) -> list[int]: ...
+    def encode(self, text: str, include_special: bool = True) -> list[int]: ...
 
     @abstractmethod
-    def decode(self, ids: list[int], skip_special: bool = True) -> str: ...
+    def decode(self, ids: list[int], include_special: bool = False) -> str: ...
 
     @abstractmethod
     def encode_batch(
-        self, texts: list[str], add_special: bool = True
+        self, texts: list[str], include_special: bool = True
     ) -> list[list[int]]: ...
 
     @property
@@ -55,19 +55,17 @@ class Tokenizer(ABC):
 
     @classmethod
     def from_config(cls, cfg: TokenizerConfig) -> Tokenizer:
-        """Build a tokenizer from config.
+        """Build a tokenizer from config by loading from `cfg.path`.
 
         - `Tokenizer.from_config(cfg)` — registry-dispatched: reads
-          `cfg.type` and instantiates the matching tokenizer class.
-        - `BPETokenizer.from_config(cfg)` (concrete subclass) — builds
-          directly. Subclasses must override this method.
+          `cfg.type` and loads via the matching tokenizer class.
+        - `BPETokenizer.from_config(cfg)` — loads as BPE directly.
         """
         if cls is Tokenizer:
             # Lazy import to avoid the tokenizer/__init__.py <-> base.py cycle.
             from minichatbot.tokenizer import TOKENIZER_REGISTRY
 
             target_cls = TOKENIZER_REGISTRY[cfg.type]
-            return target_cls.from_config(cfg)
-        raise NotImplementedError(
-            f"{cls.__name__} must override from_config"
-        )
+        else:
+            target_cls = cls
+        return target_cls.load(cfg.path)

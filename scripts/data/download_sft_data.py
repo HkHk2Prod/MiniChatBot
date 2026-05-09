@@ -13,11 +13,11 @@ pipeline (corpus → tokenize+pack → .bin; SFT → load + tokenize at runtime)
 
 Examples:
     # Alpaca-cleaned (~52K instruction/response pairs, ~25 MB)
-    python scripts/download_sft_data.py --source alpaca_cleaned \\
+    python scripts/data/download_sft_data.py --source alpaca_cleaned \\
         --output-dir data/alpaca
 
     # Cap to a sanity-test size
-    python scripts/download_sft_data.py --source alpaca_cleaned \\
+    python scripts/data/download_sft_data.py --source alpaca_cleaned \\
         --output-dir data/alpaca_small --max-rows 2000
 
 Available sources: see SOURCES dict below. Adding more is one entry —
@@ -163,7 +163,7 @@ def main() -> None:
         f"\nNext step: point your SFT config's data.train_path / data.val_path at\n"
         f"  {out_dir / 'train.jsonl'}\n"
         f"  {out_dir / 'val.jsonl'}\n"
-        f"then run scripts/sft.py."
+        f"then run scripts/train/sft.py."
     )
 
 

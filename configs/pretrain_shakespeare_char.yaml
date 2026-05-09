@@ -16,17 +16,17 @@
 # scaling up. Don't use this approach for tinystories / fineweb.
 #
 # Prep (one-time, ~30 seconds):
-#   python scripts/download_corpus.py --source tiny_shakespeare \
+#   python scripts/data/download_corpus.py --source tiny_shakespeare \
 #       --output data/shakespeare/corpus.jsonl
-#   python scripts/train_tokenizer.py --corpus data/shakespeare/corpus.jsonl \
+#   python scripts/data/train_tokenizer.py --corpus data/shakespeare/corpus.jsonl \
 #       --jsonl-key text --output data/shakespeare/tokenizer_char.json \
 #       --vocab-size 300
-#   python scripts/prepare_data.py --corpus data/shakespeare/corpus.jsonl \
+#   python scripts/data/prepare_data.py --corpus data/shakespeare/corpus.jsonl \
 #       --jsonl-key text --tokenizer data/shakespeare/tokenizer_char.json \
 #       --output data/shakespeare/char/ --val-frac 0.05
 #
 # Then launch:
-#   python scripts/pretrain.py --config configs/pretrain_shakespeare_char.yaml
+#   python scripts/train/pretrain.py --config configs/pretrain_shakespeare_char.yaml
 
 run_name: pretrain_shakespeare_char
 output_dir: runs

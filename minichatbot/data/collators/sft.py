@@ -13,6 +13,7 @@ import torch
 
 from minichatbot.data.collators import COLLATOR_REGISTRY
 from minichatbot.data.collators.base import Collator
+from minichatbot.tokenizer.base import Tokenizer
 
 
 @COLLATOR_REGISTRY.register("sft")
@@ -20,12 +21,16 @@ class SFTCollator(Collator):
     """Pads `input_ids` with `pad_id` and `labels` with -100.
 
     Constructor takes `pad_id` directly so this collator is independent
-    of any tokenizer interface. The SFT script wires it from
+    of any tokenizer interface. `from_config` wires it from
     `tokenizer.pad_id`.
     """
 
     def __init__(self, pad_id: int) -> None:
         self.pad_id = pad_id
+
+    @classmethod
+    def from_config(cls, tokenizer: Tokenizer) -> SFTCollator:
+        return cls(pad_id=tokenizer.pad_id)
 
     def __call__(self, samples: list[dict[str, torch.Tensor]]) -> dict[str, torch.Tensor]:
         max_len = max(s["input_ids"].size(0) for s in samples)

@@ -6,7 +6,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/download_corpus.py",
+        "scripts/data/download_corpus.py",
         "--source", "tiny_shakespeare",
         "--output", "data/shakespeare/corpus.jsonl"
       ],
@@ -19,7 +19,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/train_tokenizer.py",
+        "scripts/data/train_tokenizer.py",
         "--corpus", "data/shakespeare/corpus.jsonl",
         "--jsonl-key", "text",
         "--output", "data/shakespeare/tokenizer.json",
@@ -34,7 +34,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/prepare_data.py",
+        "scripts/data/prepare_data.py",
         "--corpus", "data/shakespeare/corpus.jsonl",
         "--jsonl-key", "text",
         "--tokenizer", "data/shakespeare/tokenizer.json",
@@ -61,7 +61,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/download_corpus.py",
+        "scripts/data/download_corpus.py",
         "--source", "tiny_stories",
         "--output", "data/tinystories/corpus.jsonl",
         "--max-docs", "100000"
@@ -75,7 +75,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/train_tokenizer.py",
+        "scripts/data/train_tokenizer.py",
         "--corpus", "data/tinystories/corpus.jsonl",
         "--jsonl-key", "text",
         "--output", "data/tinystories/tokenizer.json",
@@ -90,7 +90,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/prepare_data.py",
+        "scripts/data/prepare_data.py",
         "--corpus", "data/tinystories/corpus.jsonl",
         "--jsonl-key", "text",
         "--tokenizer", "data/tinystories/tokenizer.json",
@@ -117,7 +117,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/download_corpus.py",
+        "scripts/data/download_corpus.py",
         "--source", "fineweb_edu",
         "--output", "data/fineweb/corpus.jsonl",
         "--subset", "sample-10BT",
@@ -132,7 +132,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/train_tokenizer.py",
+        "scripts/data/train_tokenizer.py",
         "--corpus", "data/fineweb/corpus.jsonl",
         "--jsonl-key", "text",
         "--output", "data/fineweb/tokenizer.json",
@@ -147,7 +147,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/prepare_data.py",
+        "scripts/data/prepare_data.py",
         "--corpus", "data/fineweb/corpus.jsonl",
         "--jsonl-key", "text",
         "--tokenizer", "data/fineweb/tokenizer.json",
@@ -173,7 +173,7 @@
       "label": "[1.3M+10M] [1d] Data: generate SFT smoketest dataset (synthetic Q&A)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "args": ["scripts/make_sft_smoketest_data.py"],
+      "args": ["scripts/data/make_sft_smoketest_data.py"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -183,7 +183,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/download_sft_data.py",
+        "scripts/data/download_sft_data.py",
         "--source", "alpaca_cleaned",
         "--output-dir", "data/alpaca"
       ],
@@ -195,7 +195,7 @@
       "label": "[1.3M] [2] Pretrain: debug_shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "args": ["scripts/pretrain.py", "--config", "configs/debug_shakespeare.yaml"],
+      "args": ["scripts/train/pretrain.py", "--config", "configs/debug_shakespeare.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -204,7 +204,7 @@
       "label": "[10M] [2] Pretrain: shakespeare (~10min on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "args": ["scripts/pretrain.py", "--config", "configs/pretrain_shakespeare.yaml"],
+      "args": ["scripts/train/pretrain.py", "--config", "configs/pretrain_shakespeare.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -213,7 +213,7 @@
       "label": "[29M] [2] Pretrain: tinystories (~2-4h on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "args": ["scripts/pretrain.py", "--config", "configs/pretrain_tinystories.yaml"],
+      "args": ["scripts/train/pretrain.py", "--config", "configs/pretrain_tinystories.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -222,7 +222,7 @@
       "label": "[100M] [2] Pretrain: fineweb-edu (~6h on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "args": ["scripts/pretrain.py", "--config", "configs/pretrain_fineweb.yaml"],
+      "args": ["scripts/train/pretrain.py", "--config", "configs/pretrain_fineweb.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -232,7 +232,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/sft.py",
+        "scripts/train/sft.py",
         "--config", "configs/sft_smoketest.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "debug_shakespeare"
@@ -246,7 +246,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/sft.py",
+        "scripts/train/sft.py",
         "--config", "configs/sft_shakespeare.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "pretrain_shakespeare"
@@ -260,7 +260,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/sft.py",
+        "scripts/train/sft.py",
         "--config", "configs/sft_tinystories.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "pretrain_tinystories"
@@ -274,7 +274,7 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/sft.py",
+        "scripts/train/sft.py",
         "--config", "configs/sft_fineweb.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "pretrain_fineweb"
@@ -288,9 +288,11 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/chat.py",
+        "scripts/inference/chat.py",
         "--run-name", "sft_smoketest",
-        "--max-new-tokens", "64"
+        "--max-new-tokens", "64",
+        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "1.0",
+        "--frequency-penalty", "0.7", "--presence-penalty", "0.7"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
@@ -301,9 +303,11 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/chat.py",
+        "scripts/inference/chat.py",
         "--run-name", "sft_shakespeare",
-        "--max-new-tokens", "128"
+        "--max-new-tokens", "128",
+        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "0.9",
+        "--frequency-penalty", "0.6", "--presence-penalty", "0.6"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
@@ -314,9 +318,11 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/chat.py",
+        "scripts/inference/chat.py",
         "--run-name", "sft_tinystories",
-        "--max-new-tokens", "200"
+        "--max-new-tokens", "200",
+        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "0.8",
+        "--frequency-penalty", "0.5", "--presence-penalty", "0.5"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
@@ -327,13 +333,73 @@
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
-        "scripts/chat.py",
+        "scripts/inference/chat.py",
         "--run-name", "sft_fineweb",
-        "--max-new-tokens", "256"
+        "--max-new-tokens", "256",
+        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "0.8",
+        "--frequency-penalty", "0.4", "--presence-penalty", "0.4"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
+    },
+    {
+      "label": "[*] [2r] Pretrain: resume run (pick config + checkpoint)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/train/pretrain.py",
+        "--config", "${input:pretrainConfig}",
+        "--resume", "${input:resumeTarget}"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[*] [3r] SFT: resume run (pick config + checkpoint)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "scripts/train/sft.py",
+        "--config", "${input:sftConfig}",
+        "--resume", "${input:resumeTarget}"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "pretrainConfig",
+      "type": "pickString",
+      "description": "Pretrain config to resume",
+      "options": [
+        { "label": "[1.3M] debug_shakespeare", "value": "configs/debug_shakespeare.yaml" },
+        { "label": "[10M]  pretrain_shakespeare", "value": "configs/pretrain_shakespeare.yaml" },
+        { "label": "[29M]  pretrain_tinystories", "value": "configs/pretrain_tinystories.yaml" },
+        { "label": "[100M] pretrain_fineweb", "value": "configs/pretrain_fineweb.yaml" }
+      ],
+      "default": "configs/pretrain_tinystories.yaml"
+    },
+    {
+      "id": "sftConfig",
+      "type": "pickString",
+      "description": "SFT config to resume",
+      "options": [
+        { "label": "[1.3M] sft_smoketest", "value": "configs/sft_smoketest.yaml" },
+        { "label": "[10M]  sft_shakespeare", "value": "configs/sft_shakespeare.yaml" },
+        { "label": "[29M]  sft_tinystories", "value": "configs/sft_tinystories.yaml" },
+        { "label": "[100M] sft_fineweb", "value": "configs/sft_fineweb.yaml" }
+      ],
+      "default": "configs/sft_tinystories.yaml"
+    },
+    {
+      "id": "resumeTarget",
+      "type": "promptString",
+      "description": "Resume target: 'auto' (latest run matching cfg.run_name), or a run dir / .pt path",
+      "default": "auto"
     }
   ]
 }

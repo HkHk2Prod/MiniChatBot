@@ -19,16 +19,16 @@
 #     a single epoch over the capped data, no need for overlap pathologies
 #
 # One-time data prep (~30min download + ~10min tokenizer + ~5min pack):
-#   python scripts/download_corpus.py --source fineweb_edu \
+#   python scripts/data/download_corpus.py --source fineweb_edu \
 #       --output data/fineweb/corpus.jsonl --subset sample-10BT --max-docs 500000
-#   python scripts/train_tokenizer.py --corpus data/fineweb/corpus.jsonl \
+#   python scripts/data/train_tokenizer.py --corpus data/fineweb/corpus.jsonl \
 #       --jsonl-key text --output data/fineweb/tokenizer.json --vocab-size 32000
-#   python scripts/prepare_data.py --corpus data/fineweb/corpus.jsonl \
+#   python scripts/data/prepare_data.py --corpus data/fineweb/corpus.jsonl \
 #       --jsonl-key text --tokenizer data/fineweb/tokenizer.json \
 #       --output data/fineweb/ --val-frac 0.005
 #
 # Then launch:
-#   python scripts/pretrain.py --config configs/pretrain_fineweb.yaml
+#   python scripts/train/pretrain.py --config configs/pretrain_fineweb.yaml
 
 run_name: pretrain_fineweb
 output_dir: runs

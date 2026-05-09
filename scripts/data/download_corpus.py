@@ -1,18 +1,18 @@
 """Download a registered corpus source and write it to a JSONL file.
 
 Output format: one JSON object per line, with a `text` field.
-This is consumable by scripts/prepare_data.py via `--jsonl-key text`.
+This is consumable by scripts/data/prepare_data.py via `--jsonl-key text`.
 
 Examples:
     # Sanity check (~1MB)
-    python scripts/download_corpus.py --source tiny_shakespeare --output data/shakespeare.jsonl
+    python scripts/data/download_corpus.py --source tiny_shakespeare --output data/shakespeare.jsonl
 
     # First real run (~2GB; --max-docs caps it for testing)
-    python scripts/download_corpus.py --source tiny_stories --output data/tinystories.jsonl
-    python scripts/download_corpus.py --source tiny_stories --output data/tinystories_small.jsonl --max-docs 100000
+    python scripts/data/download_corpus.py --source tiny_stories --output data/tinystories.jsonl
+    python scripts/data/download_corpus.py --source tiny_stories --output data/tinystories_small.jsonl --max-docs 100000
 
     # Big-model territory (TBs)
-    python scripts/download_corpus.py --source fineweb_edu --output data/fineweb.jsonl \\
+    python scripts/data/download_corpus.py --source fineweb_edu --output data/fineweb.jsonl \\
         --subset sample-10BT --max-docs 1000000
 
 Pipeline (3 steps, each its own script):
@@ -96,9 +96,9 @@ def main() -> None:
     print(f"Wrote {n_docs:,} docs ({n_chars:,} chars) to {out}")
     print(
         f"\nNext steps:\n"
-        f"  python scripts/train_tokenizer.py --corpus {out} --jsonl-key text "
+        f"  python scripts/data/train_tokenizer.py --corpus {out} --jsonl-key text "
         f"--output tokenizer.json --vocab-size 8000\n"
-        f"  python scripts/prepare_data.py --corpus {out} --jsonl-key text "
+        f"  python scripts/data/prepare_data.py --corpus {out} --jsonl-key text "
         f"--tokenizer tokenizer.json --output data/ --val-frac 0.005"
     )
 

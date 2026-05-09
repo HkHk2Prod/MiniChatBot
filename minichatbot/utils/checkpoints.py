@@ -14,6 +14,10 @@ checkpoint without each script reinventing the directory walk.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from minichatbot.config import Config
 
 CHECKPOINT_GLOB = "ckpt_step_*.pt"
 BEST_CHECKPOINT_NAME = "ckpt_best.pt"
@@ -104,3 +108,62 @@ def _runs_newest_first(
     if run_name is not None:
         runs = [p for p in runs if p.name.endswith(f"_{run_name}")]
     return sorted(runs, key=lambda p: p.name, reverse=True)
+
+
+def resolve_resume_arg(arg: str, cfg: Config) -> Path:
+    """Turn a --resume CLI value into a concrete checkpoint path.
+
+    `arg` may be 'auto' (latest run matching `cfg.run_name`), a checkpoint
+    file path, or a run directory (uses its latest checkpoint).
+    """
+    if arg == "auto":
+        ckpt = find_latest_checkpoint_in(cfg.output_dir, run_name=cfg.run_name)
+        if ckpt is None:
+            raise SystemExit(
+                f"--resume auto: no checkpoints found under {cfg.output_dir} "
+                f"matching run_name='{cfg.run_name}'."
+            )
+        return ckpt
+    p = Path(arg)
+    if p.is_file():
+        return p
+    if p.is_dir():
+        ckpt = find_latest_checkpoint(p)
+        if ckpt is None:
+            raise SystemExit(f"--resume: no checkpoints in {p}/checkpoints/")
+        return ckpt
+    raise SystemExit(f"--resume path does not exist: {p}")
+
+
+def resolve_pretrained_arg(
+    arg: str,
+    cfg: Config,
+    run_name_filter: str | None = None,
+) -> Path:
+    """Turn a --from-pretrained CLI value into a concrete checkpoint path.
+
+    `arg` may be 'auto' (best ckpt under `cfg.output_dir`, falling back to
+    latest), a checkpoint file path, or a run directory (prefers
+    `ckpt_best.pt`, falls back to latest). `run_name_filter` narrows 'auto'
+    to runs ending with `_{run_name_filter}`.
+    """
+    if arg == "auto":
+        ckpt = find_best_checkpoint_in(cfg.output_dir, run_name=run_name_filter)
+        if ckpt is None:
+            ckpt = find_latest_checkpoint_in(cfg.output_dir, run_name=run_name_filter)
+        if ckpt is None:
+            raise SystemExit(
+                f"--from-pretrained auto: no checkpoints found under {cfg.output_dir}"
+                + (f" for run_name='{run_name_filter}'" if run_name_filter else "")
+                + ". Run pretrain first, or pass an explicit path."
+            )
+        return ckpt
+    p = Path(arg)
+    if p.is_file():
+        return p
+    if p.is_dir():
+        ckpt = find_best_checkpoint(p) or find_latest_checkpoint(p)
+        if ckpt is None:
+            raise SystemExit(f"--from-pretrained: no checkpoints in {p}/checkpoints/")
+        return ckpt
+    raise SystemExit(f"--from-pretrained path does not exist: {p}")

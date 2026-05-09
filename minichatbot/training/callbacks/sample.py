@@ -19,14 +19,20 @@ class SampleGenerationCallback(Callback):
     """Generates completions for a fixed list of prompts every N steps.
 
     Defaults: greedy sampling (deterministic, reproducible across runs)
-    and `stop_on_eos=False` (always emit the full `max_new_tokens`). The
-    no-stop default exists because undertrained models predict `<eos>`
-    very early — stopping there hides what the model is actually learning
-    and makes early samples look empty. Pass `stop_on_eos: true` once the
-    model is mature enough that EOS-stopping reflects real completion.
+    and `stop_on_eos=True` — samples reflect what real generation will
+    look like via `chat.py` / `generate.py`. Set `stop_on_eos: false` if
+    you want to see the full `max_new_tokens` distribution mid-training
+    (early samples become very short when EOS is the dominant token).
 
     Configure `strategy: top_k` (or `top_p`, `temperature`) and pass
     strategy kwargs alongside (e.g., `k: 50`, `temperature: 0.8`).
+
+    Repetition control (matches `chat.py` semantics):
+        frequency_penalty: subtract `f * count(token)` from each token's
+            logit; defaults to 0.0 (off). Try 0.3-0.7 if greedy samples
+            collapse into repeating phrases.
+        presence_penalty: subtract `p` if the token has appeared at all;
+            defaults to 0.0 (off).
 
     For SFT/chat-tuned models, set `chat_template: true`. Each prompt is
     then wrapped as a single-turn user message (`<|im_start|>user\\n...
@@ -42,8 +48,10 @@ class SampleGenerationCallback(Callback):
         prompts: list[str] | None = None,
         max_new_tokens: int = 64,
         strategy: str = "greedy",
-        stop_on_eos: bool = False,
+        stop_on_eos: bool = True,
         chat_template: bool = False,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
         **strategy_kwargs: Any,
     ) -> None:
         if every < 1:
@@ -54,6 +62,8 @@ class SampleGenerationCallback(Callback):
         self.strategy_name = strategy
         self.stop_on_eos = stop_on_eos
         self.chat_template = chat_template
+        self.frequency_penalty = frequency_penalty
+        self.presence_penalty = presence_penalty
         self.strategy_kwargs = strategy_kwargs
         self._text_gen: TextGenerator | None = None
         self._fh: IO[str] | None = None
@@ -63,14 +73,12 @@ class SampleGenerationCallback(Callback):
         from minichatbot.tokenizer.bpe import IM_END_TOKEN
 
         strat_cls = SAMPLING_REGISTRY[self.strategy_name]
-        # Default: do NOT stop on <eos> for training samples. An undertrained
-        # model collapses to predicting <eos> within a few tokens (it's one of
-        # the most frequent tokens in the corpus), making "completion = single
-        # token" look like the model learned nothing — when really it just
-        # short-circuited. Forcing the full max_new_tokens shows the actual
-        # token distribution the model has converged to.
-        # In chat-template mode, "stop_on_eos" means stop at <|im_end|> (the
-        # end-of-turn marker), not the pretrain-corpus EOS.
+        # Default: stop on <eos> so samples mirror what `chat.py` /
+        # `generate.py` will produce. Set `stop_on_eos: false` to force
+        # the full max_new_tokens — useful when you want to inspect the
+        # model's full distribution mid-training even after it would
+        # naturally end. In chat-template mode, "stop_on_eos" stops at
+        # <|im_end|> (the end-of-turn marker), not the pretrain EOS.
         eos_id: int | None = None
         if self.stop_on_eos:
             eos_id = (
@@ -81,6 +89,8 @@ class SampleGenerationCallback(Callback):
         gen = Generator(
             strategy=strat_cls(**self.strategy_kwargs),
             eos_id=eos_id,
+            frequency_penalty=self.frequency_penalty,
+            presence_penalty=self.presence_penalty,
         )
         return TextGenerator(model=ctx.model, tokenizer=ctx.tokenizer, generator=gen)
 
@@ -93,13 +103,13 @@ class SampleGenerationCallback(Callback):
             return self._text_gen.generate_chat(
                 self.prompts,
                 max_new_tokens=self.max_new_tokens,
-                skip_special=False,
+                include_special_in_output=True,
             )
         return self._text_gen.generate(
             self.prompts,
             max_new_tokens=self.max_new_tokens,
             return_only_completion=True,
-            skip_special=False,
+            include_special_in_output=True,
         )
 
     def on_train_start(self, ctx: CallbackContext) -> None:
@@ -109,6 +119,31 @@ class SampleGenerationCallback(Callback):
         path = Path(ctx.run_dir) / "samples.txt"
         path.parent.mkdir(parents=True, exist_ok=True)
         self._fh = path.open("a", encoding="utf-8")
+        self._fh.write(self._config_header())
+        self._fh.flush()
+
+    def _config_header(self) -> str:
+        """One-shot sampler-config block written when the file is opened.
+
+        Surfaces the decoding settings up front so a `samples.txt` left on
+        disk weeks later is still self-documenting — no need to cross-reference
+        the run's `config.yaml` to know what strategy/penalties produced
+        the completions.
+        """
+        kwargs = ", ".join(f"{k}={v}" for k, v in sorted(self.strategy_kwargs.items()))
+        strategy_str = (
+            f"{self.strategy_name}({kwargs})" if kwargs else self.strategy_name
+        )
+        return (
+            "=== sampler config ===\n"
+            f"strategy:          {strategy_str}\n"
+            f"max_new_tokens:    {self.max_new_tokens}\n"
+            f"stop_on_eos:       {self.stop_on_eos}\n"
+            f"chat_template:     {self.chat_template}\n"
+            f"frequency_penalty: {self.frequency_penalty}\n"
+            f"presence_penalty:  {self.presence_penalty}\n"
+            f"every:             {self.every}\n"
+        )
 
     def on_step_end(self, ctx: CallbackContext) -> None:
         if self._fh is None or self._text_gen is None:

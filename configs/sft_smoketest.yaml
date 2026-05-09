@@ -10,10 +10,10 @@
 #      config reuses data/shakespeare/tokenizer.json — train it via the
 #      shakespeare data-prep pipeline first.
 #   3. The synthetic SFT data:
-#        python scripts/make_sft_smoketest_data.py
+#        python scripts/data/make_sft_smoketest_data.py
 #
 # Then launch:
-#   python scripts/sft.py --config configs/sft_smoketest.yaml --from-pretrained auto
+#   python scripts/train/sft.py --config configs/sft_smoketest.yaml --from-pretrained auto
 
 run_name: sft_smoketest
 output_dir: runs

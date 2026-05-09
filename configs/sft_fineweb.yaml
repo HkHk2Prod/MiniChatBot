@@ -13,11 +13,11 @@
 #   1. A pretrain_fineweb run with a ckpt_best.pt.
 #   2. The fineweb tokenizer (from the fineweb data prep pipeline).
 #   3. Alpaca-cleaned downloaded:
-#        python scripts/download_sft_data.py --source alpaca_cleaned \
+#        python scripts/data/download_sft_data.py --source alpaca_cleaned \
 #            --output-dir data/alpaca
 #
 # Then launch:
-#   python scripts/sft.py --config configs/sft_fineweb.yaml \
+#   python scripts/train/sft.py --config configs/sft_fineweb.yaml \
 #       --from-pretrained auto --pretrain-run-name pretrain_fineweb
 
 run_name: sft_fineweb

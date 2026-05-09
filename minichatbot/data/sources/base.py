@@ -17,10 +17,7 @@ class CorpusSource(ABC):
     """Yields text documents from some source."""
 
     @abstractmethod
-    def iter_documents(self) -> Iterator[str]: ...
-
-    def __iter__(self) -> Iterator[str]:
-        return self.iter_documents()
+    def __iter__(self) -> Iterator[str]: ...
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}()"

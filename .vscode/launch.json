@@ -5,7 +5,7 @@
       "name": "[1.3M] Pretrain: debug_shakespeare",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/pretrain.py",
+      "program": "${workspaceFolder}/scripts/train/pretrain.py",
       "args": ["--config", "configs/debug_shakespeare.yaml"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
@@ -16,7 +16,7 @@
       "name": "[10M] Pretrain: shakespeare (~10min on RTX 4080)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/pretrain.py",
+      "program": "${workspaceFolder}/scripts/train/pretrain.py",
       "args": ["--config", "configs/pretrain_shakespeare.yaml"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
@@ -27,7 +27,7 @@
       "name": "[29M] Pretrain: tinystories (~2-4h on RTX 4080)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/pretrain.py",
+      "program": "${workspaceFolder}/scripts/train/pretrain.py",
       "args": ["--config", "configs/pretrain_tinystories.yaml"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
@@ -38,7 +38,7 @@
       "name": "[1.3M] Generate: latest debug_shakespeare run",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/generate.py",
+      "program": "${workspaceFolder}/scripts/inference/generate.py",
       "args": [
         "--run-name", "debug_shakespeare",
         "--max-new-tokens", "80",
@@ -55,7 +55,7 @@
       "name": "[10M] Generate: latest pretrain_shakespeare run",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/generate.py",
+      "program": "${workspaceFolder}/scripts/inference/generate.py",
       "args": [
         "--run-name", "pretrain_shakespeare",
         "--max-new-tokens", "120",
@@ -75,7 +75,7 @@
       "name": "Generate: latest run (any)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/generate.py",
+      "program": "${workspaceFolder}/scripts/inference/generate.py",
       "args": [
         "--max-new-tokens", "100",
         "Once upon a time"
@@ -89,7 +89,7 @@
       "name": "Chat: latest sft_smoketest run",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/chat.py",
+      "program": "${workspaceFolder}/scripts/inference/chat.py",
       "args": [
         "--run-name", "sft_smoketest",
         "--max-new-tokens", "64"
