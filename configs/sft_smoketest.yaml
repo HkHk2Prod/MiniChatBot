@@ -1,0 +1,85 @@
+# SFT smoketest — fine-tunes on synthetic Q&A data to exercise the full
+# SFT path (chat template, masked labels, collator, loss, samples).
+# Doesn't produce a useful model — purpose is "does the pipeline run?".
+#
+# Prereqs:
+#   1. A pretrained checkpoint to bootstrap from (run pretrain_shakespeare or
+#      pretrain_tinystories first, OR train from scratch by omitting
+#      --from-pretrained on the CLI).
+#   2. The shakespeare tokenizer (or any tokenizer with chat tokens). This
+#      config reuses data/shakespeare/tokenizer.json — train it via the
+#      shakespeare data-prep pipeline first.
+#   3. The synthetic SFT data:
+#        python scripts/data/make_sft_smoketest_data.py
+#
+# Then launch:
+#   python scripts/train/sft.py --config configs/sft_smoketest.yaml --from-pretrained auto
+
+run_name: sft_smoketest
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 2048
+  max_seq_len: 256
+  n_layers: 4
+  n_heads: 4
+  d_model: 128
+  d_ff: 512
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/shakespeare/tokenizer.json
+
+data:
+  type: sft
+  train_path: data/sft_smoketest/train.jsonl
+  val_path: data/sft_smoketest/val.jsonl
+  seq_len: 128                # Q&A pairs are short
+  num_workers: 0
+
+optim:
+  lr: 1.0e-4                  # SFT typically uses smaller LR than pretrain
+  weight_decay: 0.0           # less needed when starting from a learned init
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 50
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 500
+  batch_size: 8
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: fp32             # match the debug-friendly choice
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 25
+  - type: jsonl
+  - type: eval
+    params:
+      every: 100
+  - type: sample
+    params:
+      every: 100
+      chat_template: true       # wrap prompts as user turn + assistant header
+      stop_on_eos: true         # stop at <|im_end|> (end of assistant turn)
+      prompts:
+        - "What is 3 + 4?"
+        - "Hello"
+        - "Repeat: cat"
+      max_new_tokens: 32
+  - type: checkpoint
+    params:
+      every: 250
+      keep_last_k: 1

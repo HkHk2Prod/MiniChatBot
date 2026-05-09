@@ -1,6 +1,6 @@
 # Debug pretrain config — Tiny Shakespeare, debugger-friendly.
 #
-# Tuned for stepping through `scripts/pretrain.py` in VS Code:
+# Tuned for stepping through `scripts/train/pretrain.py` in VS Code:
 #   - tiny model (~1M params), short seq_len, small vocab    -> fast forward/backward
 #   - precision: fp32                                        -> readable tensor values, no autocast surprises
 #   - num_workers: 0                                         -> single-process DataLoader, debugger can step in
@@ -8,14 +8,14 @@
 #   - max_steps: 200 + frequent logging                      -> see every step, finish in seconds
 #
 # One-time data prep (~30 seconds total on tiny_shakespeare):
-#   python scripts/download_corpus.py --source tiny_shakespeare --output data/shakespeare/corpus.jsonl
-#   python scripts/train_tokenizer.py --corpus data/shakespeare/corpus.jsonl --jsonl-key text \
+#   python scripts/data/download_corpus.py --source tiny_shakespeare --output data/shakespeare/corpus.jsonl
+#   python scripts/data/train_tokenizer.py --corpus data/shakespeare/corpus.jsonl --jsonl-key text \
 #       --output data/shakespeare/tokenizer.json --vocab-size 2048
-#   python scripts/prepare_data.py --corpus data/shakespeare/corpus.jsonl --jsonl-key text \
+#   python scripts/data/prepare_data.py --corpus data/shakespeare/corpus.jsonl --jsonl-key text \
 #       --tokenizer data/shakespeare/tokenizer.json --output data/shakespeare/ --val-frac 0.05
 #
 # Then launch:
-#   python scripts/pretrain.py --config configs/debug_shakespeare.yaml
+#   python scripts/train/pretrain.py --config configs/debug_shakespeare.yaml
 
 run_name: debug_shakespeare
 output_dir: runs

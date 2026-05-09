@@ -1,0 +1,99 @@
+# Char-level Shakespeare pretrain — produces recognizable Shakespearean
+# output in ~5–10 minutes on CPU. Modeled after Karpathy's
+# nanoGPT-shakespeare-char demo.
+#
+# Why char-level beats subword for "good output fast on CPU":
+#   - Tiny vocab (~300 vs 2048+) -> each step's CE has a much smaller
+#     target distribution, so the model converges faster in nats/step.
+#   - The byte-level BPE tokenizer with vocab_size=300 produces almost
+#     no merges on Shakespeare, so tokens ≈ characters.
+#   - With higher learning rate (1e-3) and a few thousand steps, the
+#     model picks up rhythm, character names, and Shakespearean grammar.
+#
+# Trade-off: smaller vocab means each token carries less information,
+# so seq_len=256 chars covers fewer "ideas" than seq_len=256 BPE tokens.
+# That's fine for a tiny model on a tiny corpus; not a good default for
+# scaling up. Don't use this approach for tinystories / fineweb.
+#
+# Prep (one-time, ~30 seconds):
+#   python scripts/data/download_corpus.py --source tiny_shakespeare \
+#       --output data/shakespeare/corpus.jsonl
+#   python scripts/data/train_tokenizer.py --corpus data/shakespeare/corpus.jsonl \
+#       --jsonl-key text --output data/shakespeare/tokenizer_char.json \
+#       --vocab-size 300
+#   python scripts/data/prepare_data.py --corpus data/shakespeare/corpus.jsonl \
+#       --jsonl-key text --tokenizer data/shakespeare/tokenizer_char.json \
+#       --output data/shakespeare/char/ --val-frac 0.05
+#
+# Then launch:
+#   python scripts/train/pretrain.py --config configs/pretrain_shakespeare_char.yaml
+
+run_name: pretrain_shakespeare_char
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 300
+  max_seq_len: 256
+  n_layers: 4
+  n_heads: 4
+  d_model: 128
+  d_ff: 512
+  dropout: 0.1                # mild regularization helps on small corpora
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/shakespeare/tokenizer_char.json
+
+data:
+  type: pretrain
+  train_path: data/shakespeare/char/train.bin
+  val_path: data/shakespeare/char/val.bin
+  seq_len: 256
+  num_workers: 0
+
+optim:
+  lr: 1.0e-3                  # nanoGPT-shakespeare-char uses 1e-3 for char-level
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 100
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 2000
+  batch_size: 16
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: fp32
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 50
+  - type: jsonl
+  - type: eval
+    params:
+      every: 250
+  - type: sample
+    params:
+      every: 500
+      max_new_tokens: 200
+      strategy: top_p           # MUCH better than greedy on undertrained models
+      p: 0.9
+      temperature: 0.8
+      prompts:
+        - "ROMEO:"
+        - "HAMLET:"
+        - "To be, or not to be"
+  - type: checkpoint
+    params:
+      every: 500
+      keep_last_k: 2

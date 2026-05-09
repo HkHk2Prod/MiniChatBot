@@ -19,6 +19,7 @@ from typing import overload
 
 import torch
 
+from minichatbot.chat.template import render_prompt_for_completion
 from minichatbot.inference.generator import Generator
 from minichatbot.model.base import LanguageModel
 from minichatbot.tokenizer.base import Tokenizer
@@ -46,9 +47,9 @@ class TextGenerator:
         self,
         prompts: str,
         max_new_tokens: int = ...,
-        add_special: bool = ...,
+        include_special_in_prompt: bool = ...,
         return_only_completion: bool = ...,
-        skip_special: bool = ...,
+        include_special_in_output: bool = ...,
     ) -> str: ...
 
     @overload
@@ -56,20 +57,20 @@ class TextGenerator:
         self,
         prompts: list[str],
         max_new_tokens: int = ...,
-        add_special: bool = ...,
+        include_special_in_prompt: bool = ...,
         return_only_completion: bool = ...,
-        skip_special: bool = ...,
+        include_special_in_output: bool = ...,
     ) -> list[str]: ...
 
     def generate(
         self,
         prompts: str | list[str],
         max_new_tokens: int = 64,
-        add_special: bool = False,
+        include_special_in_prompt: bool = False,
         return_only_completion: bool = False,
-        skip_special: bool = True,
+        include_special_in_output: bool = False,
     ) -> str | list[str]:
-        """Generate completion text for one or many prompts.
+        """Generate completion text for one or many prompts (raw, no chat template).
 
         EOS-stopping is configured on the wrapped `Generator` at its
         construction time — `Generator(strategy, eos_id=...)`.
@@ -80,15 +81,15 @@ class TextGenerator:
         Args:
             prompts: input string, or list of strings.
             max_new_tokens: cap on generated tokens past each prompt.
-            add_special: whether to append EOS to each prompt before
-                feeding the model. Defaults False.
+            include_special_in_prompt: whether to append EOS to each prompt
+                before feeding the model. Defaults False.
             return_only_completion: if True, decode only the new tokens;
                 if False (default), return prompt + completion concatenated.
-            skip_special: if True (default), special tokens are stripped
-                from the decoded output — what you want for end-user
-                generation. Pass False for debug visibility (e.g. training
-                samples), so collapse modes like "<eos><eos>..." are
-                visible rather than hidden.
+            include_special_in_output: if False (default), special tokens
+                are stripped from the decoded output — what you want for
+                end-user generation. Pass True for debug visibility (e.g.
+                training samples), so collapse modes like "<eos><eos>..."
+                are visible rather than hidden.
         """
         single = isinstance(prompts, str)
         prompt_list = [prompts] if single else list(prompts)
@@ -96,9 +97,77 @@ class TextGenerator:
             return "" if single else []
 
         encoded = [
-            self.tokenizer.encode(p, add_special=add_special) for p in prompt_list
+            self.tokenizer.encode(p, include_special=include_special_in_prompt)
+            for p in prompt_list
         ]
+        completions = self._generate_from_token_ids(
+            encoded,
+            max_new_tokens=max_new_tokens,
+            return_only_completion=return_only_completion,
+            include_special_in_output=include_special_in_output,
+        )
+        return completions[0] if single else completions
 
+    @overload
+    def generate_chat(
+        self,
+        prompts: str,
+        max_new_tokens: int = ...,
+        include_special_in_output: bool = ...,
+    ) -> str: ...
+
+    @overload
+    def generate_chat(
+        self,
+        prompts: list[str],
+        max_new_tokens: int = ...,
+        include_special_in_output: bool = ...,
+    ) -> list[str]: ...
+
+    def generate_chat(
+        self,
+        prompts: str | list[str],
+        max_new_tokens: int = 64,
+        include_special_in_output: bool = False,
+    ) -> str | list[str]:
+        """Generate assistant responses to one or many user prompts.
+
+        Each prompt is wrapped as a single-turn user message via the
+        ChatML chat template; an assistant header is appended; the model
+        is sampled until `max_new_tokens` or the wrapped Generator's
+        eos_id (typically `<|im_end|>` for chat models).
+
+        Returns only the decoded completion (the assistant's reply), not
+        the prompt prefix. Use this for SFT/chat-tuned models — for raw
+        pretrained models, use `generate` instead.
+        """
+        single = isinstance(prompts, str)
+        prompt_list = [prompts] if single else list(prompts)
+        if not prompt_list:
+            return "" if single else []
+
+        encoded = [
+            render_prompt_for_completion(
+                [{"role": "user", "content": p}], self.tokenizer
+            )
+            for p in prompt_list
+        ]
+        completions = self._generate_from_token_ids(
+            encoded,
+            max_new_tokens=max_new_tokens,
+            return_only_completion=True,
+            include_special_in_output=include_special_in_output,
+        )
+        return completions[0] if single else completions
+
+    def _generate_from_token_ids(
+        self,
+        encoded: list[list[int]],
+        max_new_tokens: int,
+        return_only_completion: bool,
+        include_special_in_output: bool,
+    ) -> list[str]:
+        """Shared core: token-ids in, decoded strings out."""
         if len({len(ids) for ids in encoded}) == 1:
             # Same length across all prompts — one batched forward stream.
             prompt_ids = torch.tensor(encoded, dtype=torch.long, device=self.device)
@@ -126,7 +195,6 @@ class TextGenerator:
                 full_ids[len(prompt_ids_list):] if return_only_completion else full_ids
             )
             completions.append(
-                self.tokenizer.decode(decode_ids, skip_special=skip_special)
+                self.tokenizer.decode(decode_ids, include_special=include_special_in_output)
             )
-
-        return completions[0] if single else completions
+        return completions

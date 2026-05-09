@@ -15,15 +15,15 @@
 #   10K steps × 32 × 512 = 164M tokens trained (sub-epoch on 100K-doc subset)
 #
 # One-time data prep (~5-15 min depending on disk + HF cache):
-#   python scripts/download_corpus.py --source tiny_stories \
+#   python scripts/data/download_corpus.py --source tiny_stories \
 #       --output data/tinystories/corpus.jsonl --max-docs 100000
-#   python scripts/train_tokenizer.py --corpus data/tinystories/corpus.jsonl --jsonl-key text \
+#   python scripts/data/train_tokenizer.py --corpus data/tinystories/corpus.jsonl --jsonl-key text \
 #       --output data/tinystories/tokenizer.json --vocab-size 8000
-#   python scripts/prepare_data.py --corpus data/tinystories/corpus.jsonl --jsonl-key text \
+#   python scripts/data/prepare_data.py --corpus data/tinystories/corpus.jsonl --jsonl-key text \
 #       --tokenizer data/tinystories/tokenizer.json --output data/tinystories/ --val-frac 0.01
 #
 # Then launch:
-#   python scripts/pretrain.py --config configs/pretrain_tinystories.yaml
+#   python scripts/train/pretrain.py --config configs/pretrain_tinystories.yaml
 
 run_name: pretrain_tinystories
 output_dir: runs

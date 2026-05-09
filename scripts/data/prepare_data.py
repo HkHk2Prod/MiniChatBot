@@ -1,12 +1,12 @@
 """Tokenize a text/JSONL corpus into a packed uint16 binary for pretraining.
 
 Examples:
-    python scripts/prepare_data.py \\
+    python scripts/data/prepare_data.py \\
         --corpus data/raw/ \\
         --tokenizer tokenizer.json \\
         --output data/
 
-    python scripts/prepare_data.py \\
+    python scripts/data/prepare_data.py \\
         --corpus data/big.jsonl \\
         --jsonl-key text \\
         --tokenizer tokenizer.json \\
@@ -17,51 +17,17 @@ Examples:
 from __future__ import annotations
 
 import argparse
-import json
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 import numpy as np
 from tqdm import tqdm
 
+from minichatbot.data.corpus_iter import build_corpus_iterator
 from minichatbot.tokenizer.bpe import BPETokenizer
 
 UINT16_MAX = 65535
 DOC_BATCH_SIZE = 1024
-
-
-def _iter_lines(path: Path) -> Iterator[str]:
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.rstrip("\n")
-            if line:
-                yield line
-
-
-def _iter_jsonl(path: Path, key: str) -> Iterator[str]:
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.rstrip("\n")
-            if not line:
-                continue
-            obj = json.loads(line)
-            text = obj.get(key)
-            if text:
-                yield text
-
-
-def _iter_directory(root: Path) -> Iterator[str]:
-    for p in sorted(root.rglob("*.txt")):
-        yield from _iter_lines(p)
-
-
-def _build_iterator(args: argparse.Namespace) -> Iterator[str]:
-    path = Path(args.corpus)
-    if path.is_dir():
-        return _iter_directory(path)
-    if args.jsonl_key:
-        return _iter_jsonl(path, args.jsonl_key)
-    return _iter_lines(path)
 
 
 def tokenize_corpus(corpus: Iterator[str], tokenizer: BPETokenizer) -> np.ndarray:
@@ -69,7 +35,7 @@ def tokenize_corpus(corpus: Iterator[str], tokenizer: BPETokenizer) -> np.ndarra
     batch: list[str] = []
 
     def flush() -> None:
-        ids_batch = tokenizer.encode_batch(batch, add_special=True)
+        ids_batch = tokenizer.encode_batch(batch, include_special=True)
         for ids in ids_batch:
             chunks.append(np.asarray(ids, dtype=np.uint32))
         batch.clear()
@@ -124,7 +90,7 @@ def main() -> None:
     tokenizer = BPETokenizer.load(args.tokenizer)
     print(f"  vocab_size = {tokenizer.vocab_size}")
 
-    corpus = _build_iterator(args)
+    corpus = build_corpus_iterator(args.corpus, jsonl_key=args.jsonl_key)
     tokens = tokenize_corpus(corpus, tokenizer)
     n = len(tokens)
     print(f"Tokenized {n:,} tokens.")

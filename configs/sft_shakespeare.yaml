@@ -1,0 +1,87 @@
+# SFT on top of the 10M shakespeare pretrain.
+#
+# Same synthetic Q&A data as the smoketest — the point is to validate the
+# SFT path at non-trivial scale, not to teach the model anything useful.
+# The model: block here mirrors pretrain_shakespeare.yaml so the
+# pretrained checkpoint loads cleanly.
+#
+# Prereqs:
+#   1. A pretrain_shakespeare run with a ckpt_best.pt (run pretrain_shakespeare
+#      first).
+#   2. The shakespeare tokenizer (already produced by the shakespeare data
+#      pipeline).
+#   3. The synthetic SFT data:
+#        python scripts/data/make_sft_smoketest_data.py
+#
+# Then launch:
+#   python scripts/train/sft.py --config configs/sft_shakespeare.yaml \
+#       --from-pretrained auto --pretrain-run-name pretrain_shakespeare
+
+run_name: sft_shakespeare
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 2048             # match pretrain_shakespeare
+  max_seq_len: 256
+  n_layers: 6
+  n_heads: 6
+  d_model: 384
+  d_ff: 1536
+  dropout: 0.1
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/shakespeare/tokenizer.json
+
+data:
+  type: sft
+  train_path: data/sft_smoketest/train.jsonl
+  val_path: data/sft_smoketest/val.jsonl
+  seq_len: 128                 # Q&A pairs are short
+  num_workers: 0
+
+optim:
+  lr: 1.0e-4                   # smaller than pretrain — finetuning a learned init
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 50
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 500
+  batch_size: 16
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16              # match pretrain; fp32 fallback if bf16 unsupported
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 25
+  - type: jsonl
+  - type: eval
+    params:
+      every: 100
+  - type: sample
+    params:
+      every: 100
+      chat_template: true
+      stop_on_eos: true
+      prompts:
+        - "What is 3 + 4?"
+        - "Hello"
+        - "Repeat: cat"
+      max_new_tokens: 32
+  - type: checkpoint
+    params:
+      every: 250
+      keep_last_k: 1

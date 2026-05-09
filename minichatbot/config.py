@@ -120,7 +120,7 @@ def _from_dict(tp: Any, data: Any) -> Any:
     if origin is dict:
         return dict(data)
 
-    if dataclasses.is_dataclass(tp):
+    if isinstance(tp, type) and dataclasses.is_dataclass(tp):
         hints = typing.get_type_hints(tp)
         valid = {f.name for f in dataclasses.fields(tp)}
         unknown = set(data) - valid

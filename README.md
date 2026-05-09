@@ -60,21 +60,21 @@ This runs the full pipeline on Tiny Shakespeare (~1 MB corpus, ~1 M-param model,
 
 ```bash
 # 1. Download corpus → JSONL (one file per line)
-python scripts/download_corpus.py --source tiny_shakespeare --output data/shakespeare/corpus.jsonl
+python scripts/data/download_corpus.py --source tiny_shakespeare --output data/shakespeare/corpus.jsonl
 
 # 2. Train byte-level BPE tokenizer
-python scripts/train_tokenizer.py \
+python scripts/data/train_tokenizer.py \
     --corpus data/shakespeare/corpus.jsonl --jsonl-key text \
     --output data/shakespeare/tokenizer.json --vocab-size 2048
 
 # 3. Tokenize + pack into uint16 .bin files
-python scripts/prepare_data.py \
+python scripts/data/prepare_data.py \
     --corpus data/shakespeare/corpus.jsonl --jsonl-key text \
     --tokenizer data/shakespeare/tokenizer.json \
     --output data/shakespeare/ --val-frac 0.05
 
 # 4. Train
-python scripts/pretrain.py --config configs/debug_shakespeare.yaml
+python scripts/train/pretrain.py --config configs/debug_shakespeare.yaml
 ```
 
 Outputs land in `runs/<timestamp>_<run_name>/` — checkpoints, JSONL metrics, samples, full config snapshot, and a teed log of stdout/stderr.
@@ -87,10 +87,10 @@ Drop in a larger source and a beefier model config:
 
 ```bash
 # TinyStories (~2 GB, ~470K stories) — good first real run
-python scripts/download_corpus.py --source tiny_stories --output data/tinystories/corpus.jsonl
+python scripts/data/download_corpus.py --source tiny_stories --output data/tinystories/corpus.jsonl
 
 # FineWeb-Edu (multi-TB) — cap with --max-docs for testing
-python scripts/download_corpus.py --source fineweb_edu --output data/fineweb/corpus.jsonl \
+python scripts/data/download_corpus.py --source fineweb_edu --output data/fineweb/corpus.jsonl \
     --subset sample-10BT --max-docs 1000000
 ```
 

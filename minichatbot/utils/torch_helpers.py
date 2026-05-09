@@ -5,7 +5,18 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 
+import torch
 import torch.nn as nn
+
+
+def resolve_device(device: str) -> torch.device:
+    if device == "auto":
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return torch.device("mps")
+        return torch.device("cpu")
+    return torch.device(device)
 
 
 @contextmanager

@@ -1,53 +1,18 @@
 """Train a BPE tokenizer from a text corpus.
 
 Examples:
-    python scripts/train_tokenizer.py --corpus data/corpus.txt --output tokenizer.json --vocab-size 32000
-    python scripts/train_tokenizer.py --corpus data/corpus.jsonl --jsonl-key text --output tokenizer.json
-    python scripts/train_tokenizer.py --corpus data/raw/ --output tokenizer.json
+    python scripts/data/train_tokenizer.py --corpus data/corpus.txt --output tokenizer.json --vocab-size 32000
+    python scripts/data/train_tokenizer.py --corpus data/corpus.jsonl --jsonl-key text --output tokenizer.json
+    python scripts/data/train_tokenizer.py --corpus data/raw/ --output tokenizer.json
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
-from typing import Iterator
 
+from minichatbot.data.corpus_iter import build_corpus_iterator
 from minichatbot.tokenizer.bpe import BPETokenizer, IM_END_TOKEN, IM_START_TOKEN
-
-
-def _iter_lines(path: Path) -> Iterator[str]:
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.rstrip("\n")
-            if line:
-                yield line
-
-
-def _iter_jsonl(path: Path, key: str) -> Iterator[str]:
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.rstrip("\n")
-            if not line:
-                continue
-            obj = json.loads(line)
-            text = obj.get(key)
-            if text:
-                yield text
-
-
-def _iter_directory(root: Path) -> Iterator[str]:
-    for p in sorted(root.rglob("*.txt")):
-        yield from _iter_lines(p)
-
-
-def build_corpus_iterator(args: argparse.Namespace) -> Iterator[str]:
-    path = Path(args.corpus)
-    if path.is_dir():
-        return _iter_directory(path)
-    if args.jsonl_key:
-        return _iter_jsonl(path, args.jsonl_key)
-    return _iter_lines(path)
 
 
 def main() -> None:
@@ -68,7 +33,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    corpus = build_corpus_iterator(args)
+    corpus = build_corpus_iterator(args.corpus, jsonl_key=args.jsonl_key)
     print(
         f"Training BPE tokenizer "
         f"(vocab_size={args.vocab_size}, min_frequency={args.min_frequency}) ..."
