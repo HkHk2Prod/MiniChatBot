@@ -1,4 +1,4 @@
-# Pretrain on FineWeb-Edu — ~110M params, real web text, ~6h on RTX 4080.
+# Pretrain on FineWeb-Edu — ~110M params, real web text, ~12h on RTX 4080.
 #
 # The next step up from pretrain_tinystories (29M, children's stories): a
 # bigger model on a much higher-signal corpus. Tinystories' SFT chat felt
@@ -7,7 +7,7 @@
 #
 # Position in the ladder:
 #   pretrain_tinystories (29M, ~25M tokens)
-#     -> pretrain_fineweb.yaml (this, 110M, ~330M tokens trained)
+#     -> pretrain_fineweb.yaml (this, 110M, ~1.3B tokens trained on 2B-token corpus)
 #
 # Sizing (RTX 4080 16GB):
 #   ~110M params (12L, 12H, d_model=768, d_ff=3072)
@@ -15,12 +15,13 @@
 #     tinystories vocab that fragments rare words
 #   seq_len 1024 — captures longer contexts than tinystories' 512
 #   batch 16, grad_accum 2 -> effective 32; ~12-13GB VRAM in bf16
-#   20K steps × 32 × 1024 = 655M tokens trained — comfortably more than
-#     a single epoch over the capped data, no need for overlap pathologies
+#   40K steps × 32 × 1024 = 1.31B tokens trained — ~65% of Chinchilla
+#     optimal (~2.2B for 110M), single epoch over the 2M-doc corpus
+#     with no repetition. Bump max_steps to ~67K for full Chinchilla.
 #
-# One-time data prep (~30min download + ~10min tokenizer + ~5min pack):
+# One-time data prep (~2h download + ~15min tokenizer + ~20min pack):
 #   python scripts/data/download_corpus.py --source fineweb_edu \
-#       --output data/fineweb/corpus.jsonl --subset sample-10BT --max-docs 500000
+#       --output data/fineweb/corpus.jsonl --subset sample-10BT --max-docs 2000000
 #   python scripts/data/train_tokenizer.py --corpus data/fineweb/corpus.jsonl \
 #       --jsonl-key text --output data/fineweb/tokenizer.json --vocab-size 32000
 #   python scripts/data/prepare_data.py --corpus data/fineweb/corpus.jsonl \
@@ -68,7 +69,7 @@ optim:
   min_lr_ratio: 0.1
 
 trainer:
-  max_steps: 20000
+  max_steps: 40000
   batch_size: 16
   grad_accum_steps: 2          # effective batch 32 — stabler grads at this scale
   grad_clip: 1.0
@@ -97,3 +98,12 @@ callbacks:
         - "The sun rose over"
         - "Scientists recently discovered that"
       max_new_tokens: 96
+      # Top-p with mild penalties instead of greedy: greedy on a small
+      # undertrained base model collapses into repetition loops and hides
+      # how the chat REPL will actually behave. These settings match the
+      # chat task defaults so mid-training samples preview real generation.
+      strategy: top_p
+      top_p: 0.9
+      temperature: 0.8
+      frequency_penalty: 0.3
+      presence_penalty: 0.3

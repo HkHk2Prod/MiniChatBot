@@ -113,7 +113,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[100M] [1a] Data: download fineweb-edu (sample-10BT, 500K cap, ~30min)",
+      "label": "[100M] [1a] Data: download fineweb-edu (sample-10BT, 2M cap, ~2h)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": [
@@ -121,7 +121,7 @@
         "--source", "fineweb_edu",
         "--output", "data/fineweb/corpus.jsonl",
         "--subset", "sample-10BT",
-        "--max-docs", "500000"
+        "--max-docs", "2000000"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
@@ -161,7 +161,7 @@
     {
       "label": "[100M] [1] Data: ALL fineweb (download → tokenizer → prepare → alpaca-cleaned)",
       "dependsOn": [
-        "[100M] [1a] Data: download fineweb-edu (sample-10BT, 500K cap, ~30min)",
+        "[100M] [1a] Data: download fineweb-edu (sample-10BT, 2M cap, ~2h)",
         "[100M] [1b] Data: tokenizer fineweb (vocab 32K, ~10min)",
         "[100M] [1c] Data: prepare fineweb",
         "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)"
@@ -219,7 +219,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[100M] [2] Pretrain: fineweb-edu (~6h on RTX 4080)",
+      "label": "[100M] [2] Pretrain: fineweb-edu (~12h on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": ["scripts/train/pretrain.py", "--config", "configs/pretrain_fineweb.yaml"],
