@@ -4,7 +4,7 @@
 #   PyPI ships CPU-only torch wheels. For training on a CUDA GPU, install torch
 #   from PyTorch's CUDA index BEFORE running `pip install -e .`:
 #
-#       pip install torch --index-url https://download.pytorch.org/whl/cu124
+#       pip install torch --index-url https://download.pytorch.org/whl/cu126
 #
 #   Or just run scripts/setup.ps1 (Windows) / scripts/setup.sh (POSIX) — they
 #   default to CUDA. Pass -Cpu / USE_CPU=1 for the CPU fallback.

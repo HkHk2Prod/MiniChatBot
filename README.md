@@ -25,9 +25,9 @@ The setup scripts handle venv creation, the right torch wheel for your hardware,
 ```powershell
 git clone <repo-url> MiniChatBot
 cd MiniChatBot
-.\scripts\setup.ps1                # default: CUDA cu124, full extras
+.\scripts\setup.ps1                # default: CUDA cu126, full extras
 .\scripts\setup.ps1 -Cpu           # CPU-only fallback
-.\scripts\setup.ps1 -Cuda cu126    # different CUDA version
+.\scripts\setup.ps1 -Cuda cu128    # different CUDA version
 .\scripts\setup.ps1 -Force         # swap an existing CPU venv to CUDA
 .\.venv\Scripts\Activate.ps1
 ```
@@ -37,7 +37,7 @@ cd MiniChatBot
 ```bash
 git clone <repo-url> MiniChatBot
 cd MiniChatBot
-bash scripts/setup.sh              # default: CUDA cu124
+bash scripts/setup.sh              # default: CUDA cu126
 USE_CPU=1 bash scripts/setup.sh    # CPU-only fallback
 FORCE=1 bash scripts/setup.sh      # swap CPU venv to CUDA
 source .venv/bin/activate
@@ -48,7 +48,7 @@ source .venv/bin/activate
 ```bash
 python -m venv .venv
 source .venv/bin/activate          # or .venv\Scripts\Activate.ps1 on Windows
-pip install torch --index-url https://download.pytorch.org/whl/cu124   # or omit --index-url for CPU
+pip install torch --index-url https://download.pytorch.org/whl/cu126   # or omit --index-url for CPU
 pip install -e ".[dev,tensorboard,data]"
 ```
 

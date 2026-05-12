@@ -10,7 +10,7 @@
     CUDA is the default. Pass -Cpu to install the CPU-only wheel.
 
 .PARAMETER Cuda
-    CUDA wheel index suffix (cu118, cu121, cu124, cu126). Default: cu124.
+    CUDA wheel index suffix (cu118, cu121, cu124, cu126, cu128). Default: cu126.
 
 .PARAMETER Cpu
     Install CPU-only torch instead of CUDA.
@@ -26,15 +26,15 @@
     Python executable used to create the venv. Default: "python".
 
 .EXAMPLE
-    .\scripts\setup.ps1                    # default: CUDA cu124, full install
-    .\scripts\setup.ps1 -Cuda cu126        # override CUDA version
+    .\scripts\setup.ps1                    # default: CUDA cu126, full install
+    .\scripts\setup.ps1 -Cuda cu128        # override CUDA version
     .\scripts\setup.ps1 -Cpu               # CPU-only fallback
     .\scripts\setup.ps1 -Force             # swap existing CPU wheel for CUDA
 #>
 
 [CmdletBinding()]
 param(
-    [string]$Cuda = "cu124",
+    [string]$Cuda = "cu126",
     [switch]$Cpu,
     [switch]$NoExtras,
     [switch]$Force,

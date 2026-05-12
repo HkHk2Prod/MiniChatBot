@@ -2,7 +2,7 @@
 # Initialize a CUDA-enabled venv for MiniChatBot.
 #
 # CUDA is the default. Override via environment variables:
-#   CUDA=cu126        Use a different CUDA version (cu118, cu121, cu124, cu126).
+#   CUDA=cu128        Use a different CUDA version (cu118, cu121, cu124, cu126, cu128).
 #   USE_CPU=1         Install CPU-only torch instead.
 #   NO_EXTRAS=1       Skip [dev,tensorboard] extras.
 #   FORCE=1           Force-reinstall torch (e.g., switching CPU<->CUDA wheels).
@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-CUDA="${CUDA:-cu124}"
+CUDA="${CUDA:-cu126}"
 USE_CPU="${USE_CPU:-0}"
 NO_EXTRAS="${NO_EXTRAS:-0}"
 FORCE="${FORCE:-0}"
