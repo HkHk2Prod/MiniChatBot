@@ -66,6 +66,7 @@ class Trainer:
         device: torch.device,
         val_loader: DataLoader | None = None,
         tokenizer: Any | None = None,
+        startup_warnings: list[str] | None = None,
     ) -> None:
         self.config = config
         self.full_config = full_config
@@ -105,9 +106,20 @@ class Trainer:
         # range(self.step + 1, max_steps + 1), so resumption is automatic.
         self.step: int = 0
 
+        # Messages built outside the trainer (e.g. YAML/checkpoint model
+        # config reconciliation) that should appear in log.txt — replayed
+        # in fit() AFTER on_train_start so the LogFile callback's stdout
+        # tee is already installed.
+        self._startup_warnings: list[str] = list(startup_warnings or [])
+
     def fit(self) -> None:
         ctx = self._make_ctx()
         self._fire("on_train_start", ctx)
+        # Replay deferred startup warnings here, not at the call site that
+        # built them — by now the LogFile callback's stdout tee is in
+        # place, so banners end up in log.txt as well as the console.
+        for warning in self._startup_warnings:
+            print(warning, flush=True)
         # Allow callbacks to publish baseline eval metrics from on_train_start
         # (e.g., eval-at-step-0 to show the pre-training reference loss).
         if ctx.eval_metrics is not None:
@@ -153,16 +165,25 @@ class Trainer:
         self,
         path: str | Path,
         map_location: str | torch.device | None = None,
+        *,
+        preloaded_state: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Restore model / optimizer / scheduler / step into this Trainer.
 
         Returns the `extra` dict from the checkpoint (or empty dict).
         Caller is responsible for ensuring the trainer was constructed
         with a model architecture compatible with the checkpoint.
+
+        Pass ``preloaded_state`` to reuse a state dict the caller already
+        loaded (e.g., for upfront model_config reconciliation), avoiding
+        a redundant torch.load of a large checkpoint.
         """
         if map_location is None:
             map_location = self.device
-        state = torch.load(path, map_location=map_location, weights_only=False)
+        if preloaded_state is not None:
+            state = preloaded_state
+        else:
+            state = torch.load(path, map_location=map_location, weights_only=False)
         self.model.load_state_dict(state["model"])
         self.optimizer.load_state_dict(state["optimizer"])
         self.scheduler.load_state_dict(state["scheduler"])

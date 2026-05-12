@@ -33,7 +33,7 @@ model:
   n_layers: 6
   n_heads: 8
   d_model: 512
-  d_ff: 2048
+  d_ff: 1408
   dropout: 0.0
   tie_embeddings: true
   norm_type: rmsnorm
