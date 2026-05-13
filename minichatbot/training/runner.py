@@ -1,42 +1,33 @@
-"""Shared training runner for pretrain, SFT, and (eventually) RL.
+"""Shared training runner for pretrain and SFT.
 
 The thin scripts in `scripts/` only handle CLI parsing + checkpoint-arg
 resolution; everything from "build tokenizer" through "trainer.fit()"
-lives here so adding a new training stage is a new entry-point script,
-not another copy of this scaffolding.
+lives here (and in `builders.py` for the pieces also shared with the RL
+runner) so adding a training stage is a new entry-point script, not
+another copy of this scaffolding.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
-from typing import Any, cast
 
 import torch
-from torch.utils.data import DataLoader
 
 from minichatbot.config import Config, save_config
-from minichatbot.data import DATASET_REGISTRY
-from minichatbot.data.collators import COLLATOR_REGISTRY
-from minichatbot.model import MODEL_REGISTRY
-from minichatbot.model.base import LanguageModel
-from minichatbot.tokenizer import TOKENIZER_REGISTRY
-from minichatbot.training.callbacks import CALLBACK_REGISTRY
-from minichatbot.training.losses import LOSS_REGISTRY
+from minichatbot.training.builders import (
+    build_callbacks,
+    build_loaders,
+    build_loss,
+    build_model,
+    build_tokenizer,
+    make_run_dir,
+    preload_checkpoint,
+)
 from minichatbot.training.optim import build_optimizer, build_scheduler
 from minichatbot.training.trainer import Trainer
-from minichatbot.utils.model_config_check import (
-    parse_ckpt_model_config,
-    reconcile_model_config,
-)
 from minichatbot.utils.torch_helpers import resolve_device
 
-
-def make_run_dir(cfg: Config) -> Path:
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = Path(cfg.output_dir) / f"{ts}_{cfg.run_name}"
-    run_dir.mkdir(parents=True, exist_ok=True)
-    return run_dir
+__all__ = ["build_and_train", "make_run_dir"]
 
 
 def build_and_train(
@@ -52,110 +43,32 @@ def build_and_train(
 
     `pretrained_ckpt` loads ONLY model weights (SFT bootstrap); step
     counter and optimizer state stay fresh. `resume_ckpt` restores full
-    training state. The two are mutually exclusive — callers should
-    enforce that before calling.
+    training state. The two are mutually exclusive.
     """
-    if pretrained_ckpt is not None and resume_ckpt is not None:
-        raise ValueError(
-            "build_and_train: pretrained_ckpt and resume_ckpt are mutually exclusive."
-        )
-
     torch.manual_seed(cfg.seed)
     device = resolve_device(cfg.device)
 
     run_dir = make_run_dir(cfg)
     save_config(cfg, run_dir / "config.yaml")
 
-    tok_cls = TOKENIZER_REGISTRY[cfg.tokenizer.type]
-    tokenizer = tok_cls.from_config(cfg.tokenizer)
-    # Snapshot the tokenizer in the run dir so the run is self-contained:
-    # generate.py / future SFT loaders can find it next to checkpoints
-    # without needing the original data/ tree to still exist.
-    tokenizer.save(run_dir / "tokenizer.json")
-
-    ds_cls = DATASET_REGISTRY[dataset_key]
-    train_ds = ds_cls.from_config(cfg.data, tokenizer, split="train")
-    val_ds = (
-        ds_cls.from_config(cfg.data, tokenizer, split="val")
-        if cfg.data.val_path
-        else None
+    tokenizer = build_tokenizer(cfg, run_dir)
+    train_loader, val_loader = build_loaders(
+        cfg, tokenizer, dataset_key=dataset_key, collator_key=collator_key,
+        device=device, with_val=True,
     )
 
-    coll_cls = COLLATOR_REGISTRY[collator_key]
-    collator = coll_cls.from_config(tokenizer)
-
-    pin = device.type == "cuda"
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=cfg.trainer.batch_size,
-        shuffle=True,
-        collate_fn=collator,
-        num_workers=cfg.data.num_workers,
-        pin_memory=pin,
-        drop_last=True,
+    incoming_state, effective_model_cfg, startup_warnings = preload_checkpoint(
+        cfg, resume_ckpt=resume_ckpt, pretrained_ckpt=pretrained_ckpt, device=device,
     )
-    val_loader = (
-        DataLoader(
-            val_ds,
-            batch_size=cfg.trainer.batch_size,
-            shuffle=False,
-            collate_fn=collator,
-            num_workers=cfg.data.num_workers,
-            pin_memory=pin,
-            drop_last=False,
-        )
-        if val_ds is not None
-        else None
+    model = build_model(
+        effective_model_cfg, device=device, compile=cfg.trainer.compile,
+        pretrained_ckpt=pretrained_ckpt, incoming_state=incoming_state,
+        weights_label="pretrain",
     )
 
-    # Pre-load checkpoint header for --resume or --from-pretrained so we
-    # can reconcile its saved model_config with the YAML BEFORE building
-    # the model — otherwise a shape mismatch fails inside load_state_dict
-    # with cryptic size errors. Reused below for the actual weight load,
-    # so we still only torch.load once per run.
-    incoming_path = resume_ckpt if resume_ckpt is not None else pretrained_ckpt
-    incoming_state: dict[str, Any] | None = None
-    startup_warnings: list[str] = []
-    effective_model_cfg = cfg.model
-    if incoming_path is not None:
-        incoming_state = torch.load(
-            incoming_path, map_location=device, weights_only=False
-        )
-        if "model_config" in incoming_state:
-            ckpt_model_cfg = parse_ckpt_model_config(incoming_state["model_config"])
-            mode = "resume" if resume_ckpt is not None else "from_pretrained"
-            effective_model_cfg, startup_warnings = reconcile_model_config(
-                cfg.model, ckpt_model_cfg, mode=mode
-            )
-
-    model_cls = MODEL_REGISTRY[effective_model_cfg.type]
-    model = model_cls.from_config(effective_model_cfg).to(device)
-
-    # Bootstrap from pretrain BEFORE optimizer/scheduler are built so the
-    # optimizer's parameter list is correct for the (possibly torch.compiled)
-    # model. Step counter intentionally stays at 0.
-    if pretrained_ckpt is not None:
-        print(f"loading pretrain weights from {pretrained_ckpt}")
-        assert incoming_state is not None  # set in the pre-load block above
-        model.load_state_dict(incoming_state["model"])
-
-    if cfg.trainer.compile:
-        # torch.compile returns an OptimizedModule wrapper. At runtime it
-        # delegates attribute access (cfg, parameters, etc.) to the wrapped
-        # model, so it's still effectively a LanguageModel — but PyTorch's
-        # stubs don't preserve the type, so cast to keep the rest of the
-        # pipeline (Trainer, build_optimizer) statically typed.
-        model = cast(LanguageModel, torch.compile(model))
-
-    loss_cls = LOSS_REGISTRY[loss_key]
-    loss_fn = loss_cls().to(device)
+    loss_fn = build_loss(loss_key, device)
     optimizer = build_optimizer(model, cfg.optim)
     scheduler = build_scheduler(optimizer, cfg.optim, cfg.trainer.max_steps)
-
-    callbacks = []
-    for spec in cfg.callbacks:
-        cls = CALLBACK_REGISTRY[spec.type]
-        callbacks.append(cls(**spec.params))
 
     trainer = Trainer(
         config=cfg.trainer,
@@ -166,7 +79,7 @@ def build_and_train(
         scheduler=scheduler,
         train_loader=train_loader,
         val_loader=val_loader,
-        callbacks=callbacks,
+        callbacks=build_callbacks(cfg),
         run_dir=run_dir,
         device=device,
         tokenizer=tokenizer,

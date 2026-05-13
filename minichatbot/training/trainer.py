@@ -1,7 +1,10 @@
 """Trainer for autoregressive language-model training.
 
 One trainer covers pretrain and SFT (just different Loss + Collator
-+ Dataset). RL (PPO) will subclass this when the time comes.
++ Dataset). The RL stage subclasses it — see
+`minichatbot.training.rl_trainer.GRPOTrainer`, which keeps this
+lifecycle but swaps the supervised forward/backward for
+sample -> reward -> policy-gradient.
 
 Lifecycle:
     on_train_start
@@ -213,31 +216,11 @@ class Trainer:
                 output = self.model(batch["input_ids"])
                 actual_loss = self.loss(output, batch)
                 scaled = actual_loss / accum
-            if self.scaler is not None:
-                self.scaler.scale(scaled).backward()
-            else:
-                scaled.backward()
+            self._backward(scaled)
             total_loss += float(actual_loss.item())
 
         self._fire("on_backward_end", ctx)
-
-        if self.scaler is not None:
-            self.scaler.unscale_(self.optimizer)
-
-        grad_norm: float | None = None
-        if self.config.grad_clip is not None:
-            grad_norm = float(
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), self.config.grad_clip
-                )
-            )
-
-        if self.scaler is not None:
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-        else:
-            self.optimizer.step()
-        self.scheduler.step()
+        grad_norm = self._optimizer_step()
 
         step_dt = time.monotonic() - t0
         seq_len = last_batch["input_ids"].size(1)
@@ -248,6 +231,38 @@ class Trainer:
         ctx.grad_norm = grad_norm
         ctx.lr = float(self.scheduler.get_last_lr()[0])
         ctx.tokens_per_sec = tokens / step_dt if step_dt > 0 else None
+
+    def _backward(self, scaled_loss: torch.Tensor) -> None:
+        """Backward a (already grad-accum-scaled) loss, through the GradScaler
+        when fp16 is active. Shared by Trainer._train_step and subclasses
+        (e.g., GRPOTrainer) so the AMP plumbing lives in exactly one place."""
+        if self.scaler is not None:
+            self.scaler.scale(scaled_loss).backward()
+        else:
+            scaled_loss.backward()
+
+    def _optimizer_step(self) -> float | None:
+        """Unscale (fp16) -> grad-clip -> optimizer.step -> scheduler.step.
+
+        Returns the pre-clip grad norm if grad_clip is set, else None.
+        Call once per training step, after all grad-accum backwards.
+        """
+        if self.scaler is not None:
+            self.scaler.unscale_(self.optimizer)
+        grad_norm: float | None = None
+        if self.config.grad_clip is not None:
+            grad_norm = float(
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.config.grad_clip
+                )
+            )
+        if self.scaler is not None:
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            self.optimizer.step()
+        self.scheduler.step()
+        return grad_norm
 
     def autocast(self):
         """Return the autocast context that wraps every train forward.
