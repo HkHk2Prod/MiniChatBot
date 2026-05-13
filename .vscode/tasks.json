@@ -253,7 +253,10 @@
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
       "args": ["scripts/train/pretrain.py", "--config", "configs/pretrain_fineweb.yaml"],
-      "options": { "cwd": "${workspaceFolder}" },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True" }
+      },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
     },
