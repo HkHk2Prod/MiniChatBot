@@ -1,0 +1,81 @@
+# RL (GRPO) smoketest — exercises the full RL path (prompt render →
+# sample a group of completions → reward → advantage → policy-gradient)
+# on a tiny toy model. Does NOT produce anything useful; purpose is
+# "does the RL pipeline run?".
+#
+# Prereqs:
+#   1. The shakespeare tokenizer (has chat tokens): data/shakespeare/tokenizer.json
+#      — train it via the shakespeare data-prep pipeline first.
+#   2. The synthetic RL data:
+#        python scripts/data/make_rl_smoketest_data.py
+#
+# Then launch (from scratch — no SFT bootstrap needed for a smoketest):
+#   python scripts/train/rl.py --config configs/rl_smoketest.yaml
+#
+# Or bootstrap from an SFT smoketest run:
+#   python scripts/train/rl.py --config configs/rl_smoketest.yaml --from-pretrained auto
+
+run_name: rl_smoketest
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 2048
+  max_seq_len: 256
+  n_layers: 4
+  n_heads: 4
+  d_model: 128
+  d_ff: 384
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/shakespeare/tokenizer.json
+
+data:
+  type: rl
+  train_path: data/rl_smoketest/train.jsonl
+  seq_len: 128
+  num_workers: 0
+  system_prompt: "Solve it and end with: #### <number>"
+
+rl:
+  group_size: 4
+  max_new_tokens: 32
+  temperature: 1.0
+  top_p: 1.0
+  top_k: null
+  normalize_advantage_std: true
+  reward: gsm8k
+
+optim:
+  lr: 1.0e-5
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 5
+  lr_schedule: constant
+  min_lr_ratio: 1.0
+
+trainer:
+  max_steps: 20
+  batch_size: 4
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: fp32
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 1
+  - type: jsonl
+  - type: checkpoint
+    params:
+      every: 10
+      keep_last_k: 1

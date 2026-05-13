@@ -80,14 +80,28 @@ class ConsoleCallback(Callback):
             parts.append(f"|g| {ctx.grad_norm:.2f}")
         if ctx.tokens_per_sec is not None:
             parts.append(f"tok/s {ctx.tokens_per_sec:,.0f}")
+        # Stage-specific scalars (e.g. RL's reward_mean / solve_rate).
+        for k, v in ctx.extra.items():
+            if isinstance(v, (int, float)):
+                parts.append(f"{k} {v:.3f}")
         parts.append(f"sps {sps:.2f}")
         parts.append(f"elapsed {_fmt_elapsed(elapsed)}")
         print("[console] " + " | ".join(parts))
 
     def on_eval_end(self, ctx: CallbackContext) -> None:
-        if ctx.eval_metrics:
-            metrics = " ".join(f"{k}={v:.4f}" for k, v in ctx.eval_metrics.items())
-            print(f"[console] eval @ step {ctx.step}: {metrics}")
+        if not ctx.eval_metrics:
+            return
+        parts: list[str] = []
+        for k, v in ctx.eval_metrics.items():
+            if k == "elapsed_s":
+                parts.append(f"elapsed={_fmt_elapsed(v)}")
+            elif isinstance(v, bool) or not isinstance(v, (int, float)):
+                parts.append(f"{k}={v}")
+            elif isinstance(v, int):
+                parts.append(f"{k}={v}")
+            else:
+                parts.append(f"{k}={v:.4f}")
+        print(f"[console] eval @ step {ctx.step}: {' '.join(parts)}")
 
     def on_train_end(self, ctx: CallbackContext) -> None:
         elapsed = time.monotonic() - (self._t0 or time.monotonic())

@@ -45,6 +45,9 @@ class DataConfig:
     val_path: str | None = None
     seq_len: int = 1024
     num_workers: int = 4
+    # RL only: optional system prompt prepended to every sampled prompt.
+    # Ignored by the pretrain/SFT datasets.
+    system_prompt: str | None = None
 
 
 @dataclass
@@ -69,6 +72,26 @@ class TrainerConfig:
 
 
 @dataclass
+class RLConfig:
+    """GRPO reinforcement-learning stage knobs.
+
+    Only consumed by `scripts/train/rl.py`; pretrain/SFT ignore it.
+    `group_size` completions are sampled per prompt and scored by the
+    reward function named in `reward` (see `minichatbot.rl.REWARD_REGISTRY`);
+    advantages are computed by mean-centering each group (and dividing by
+    the group std when `normalize_advantage_std` is set — the "GR" in GRPO).
+    """
+
+    group_size: int = 8
+    max_new_tokens: int = 256
+    temperature: float = 1.0
+    top_p: float = 1.0
+    top_k: int | None = None
+    normalize_advantage_std: bool = True
+    reward: str = "gsm8k"
+
+
+@dataclass
 class CallbackSpec:
     type: str
     params: dict[str, Any] = field(default_factory=dict)
@@ -85,6 +108,7 @@ class Config:
     tokenizer: TokenizerConfig = field(default_factory=TokenizerConfig)
     optim: OptimConfig = field(default_factory=OptimConfig)
     trainer: TrainerConfig = field(default_factory=TrainerConfig)
+    rl: RLConfig = field(default_factory=RLConfig)
     callbacks: list[CallbackSpec] = field(default_factory=list)
 
     @classmethod
@@ -191,3 +215,10 @@ def validate(cfg: Config) -> None:
             f"data.seq_len ({cfg.data.seq_len}) cannot exceed "
             f"model.max_seq_len ({cfg.model.max_seq_len})"
         )
+    if cfg.rl.group_size < 2:
+        raise ValueError(
+            f"rl.group_size must be >= 2 (need a group to baseline against), "
+            f"got {cfg.rl.group_size}"
+        )
+    if not 0.0 < cfg.rl.top_p <= 1.0:
+        raise ValueError(f"rl.top_p must be in (0, 1], got {cfg.rl.top_p}")

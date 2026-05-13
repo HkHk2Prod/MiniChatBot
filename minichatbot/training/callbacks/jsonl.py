@@ -42,6 +42,10 @@ class JsonlCallback(Callback):
             v = getattr(ctx, k)
             if v is not None:
                 record[k] = v
+        # Stage-specific scalars (e.g. RL's reward_mean / solve_rate).
+        for k, v in ctx.extra.items():
+            if isinstance(v, (int, float)) and k not in record:
+                record[k] = v
         self._write(record)
 
     def on_eval_end(self, ctx: CallbackContext) -> None:

@@ -433,6 +433,74 @@
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] [1f] Data: generate RL smoketest dataset (synthetic GSM8K-shaped)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": ["scripts/data/make_rl_smoketest_data.py"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [1g] Data: download GSM8K (RL prompts: 7.5K train + 1.3K test)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/data/download_rl_data.py",
+        "--source", "gsm8k",
+        "--output-dir", "data/gsm8k"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] [5] RL: rl_smoketest (GRPO smoketest, from scratch)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": ["scripts/train/rl.py", "--config", "configs/rl_smoketest.yaml"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [5] RL: rl_gsm8k (GRPO on GSM8K, from sft_fineweb)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/train/rl.py",
+        "--config", "configs/rl_gsm8k.yaml",
+        "--from-pretrained", "auto",
+        "--pretrain-run-name", "sft_fineweb"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[*] [5r] RL: resume run (pick config + checkpoint)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/train/rl.py",
+        "--config", "${input:rlConfig}",
+        "--resume", "${input:resumeTarget}"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
     }
   ],
   "inputs": [
@@ -459,6 +527,16 @@
         { "label": "[100M] sft_fineweb", "value": "configs/sft_fineweb.yaml" }
       ],
       "default": "configs/sft_tinystories.yaml"
+    },
+    {
+      "id": "rlConfig",
+      "type": "pickString",
+      "description": "RL config to resume",
+      "options": [
+        { "label": "[1.3M] rl_smoketest", "value": "configs/rl_smoketest.yaml" },
+        { "label": "[100M] rl_gsm8k", "value": "configs/rl_gsm8k.yaml" }
+      ],
+      "default": "configs/rl_gsm8k.yaml"
     },
     {
       "id": "resumeTarget",

@@ -1,6 +1,6 @@
 # MiniChatBot
 
-A small ChatGPT-style language model trainable end-to-end on a personal PC. Built around a single decoder-only Transformer that progresses through pretraining, supervised fine-tuning, and reinforcement learning — currently the pretrain pipeline is implemented; SFT and RL are in design.
+A small ChatGPT-style language model trainable end-to-end on a personal PC. Built around a single decoder-only Transformer that progresses through pretraining, supervised fine-tuning, and reinforcement learning (GRPO) — all three stages are implemented.
 
 > **Inspiration**: this project is an attempt to reproduce — and learn from — Andrej Karpathy's [nanochat](https://github.com/karpathy/nanochat). The goal is to internalize the full pretrain → SFT → RL pipeline by re-deriving it from scratch in a slightly more modular layout, not to outperform it. If you want a cleaner, faster reference, go read nanochat directly.
 
@@ -122,7 +122,8 @@ All runtime behavior is set in YAML; see [configs/](configs/) for examples. The 
 | `run_name`, `output_dir`, `seed`, `device` | Run identity and infra |
 | `model` | Architecture (`type`, `n_layers`, `d_model`, `vocab_size`, `max_seq_len`, …) |
 | `tokenizer` | `type` + path to a trained `tokenizer.json` |
-| `data` | `type` (`pretrain` / future `sft` / `rl`), `train_path`, `val_path`, `seq_len` |
+| `data` | `type` (`pretrain` / `sft` / `rl`), `train_path`, `val_path`, `seq_len`, `system_prompt` (RL) |
+| `rl` | GRPO knobs (RL only): `group_size`, `max_new_tokens`, `temperature`, `top_p`/`top_k`, `reward` |
 | `optim` | `lr`, `betas`, `warmup_steps`, `lr_schedule`, `weight_decay` |
 | `trainer` | `max_steps`, `batch_size`, `grad_accum_steps`, `precision`, `compile` |
 | `callbacks` | Ordered list — order matters; `logfile` first so its tee captures everything |
@@ -149,23 +150,35 @@ minichatbot/
     generator.py         # token-level sampling loop with KV cache
     text_generator.py    # text-in / text-out wrapper
     strategies/          # greedy, temperature, top_k, top_p
+  rl/
+    rewards/             # Reward implementations (REWARD_REGISTRY) — gsm8k, ...
+    rollout.py           # sample completions -> reward -> advantage -> training batch
   training/
     trainer.py           # step-based loop with callback events
-    losses/              # cross-entropy for pretrain (more stages later)
+    rl_trainer.py        # GRPOTrainer — Trainer subclass with the sample/reward/PG step
+    runner.py            # build-and-train for pretrain + SFT
+    rl_runner.py         # build-and-train for the RL stage
+    losses/              # cross-entropy (pretrain/sft), grpo (RL policy-gradient surrogate)
     callbacks/           # logfile, console, jsonl, tensorboard, wandb, checkpoint, eval, sample
     optim.py             # optimizer + LR scheduler builders
   utils/                 # registry, atomic IO, eval-mode context manager
 
 scripts/
-  setup.ps1 / setup.sh   # venv + torch + project install
-  download_corpus.py     # source registry  -> JSONL
-  train_tokenizer.py     # JSONL/text       -> tokenizer.json
-  prepare_data.py        # JSONL + tokenizer -> packed uint16 .bin
-  pretrain.py            # YAML config      -> training run
+  setup.ps1 / setup.sh        # venv + torch + project install
+  data/download_corpus.py     # source registry   -> JSONL
+  data/train_tokenizer.py     # JSONL/text        -> tokenizer.json
+  data/prepare_data.py        # JSONL + tokenizer -> packed uint16 .bin
+  data/download_sft_data.py   # HF dataset        -> chat-format JSONL (SFT)
+  data/download_rl_data.py    # HF dataset        -> {question, answer} JSONL (RL)
+  train/pretrain.py           # YAML config       -> pretraining run
+  train/sft.py                # YAML config       -> SFT run (--from-pretrained)
+  train/rl.py                 # YAML config       -> GRPO run (--from-pretrained)
 
 configs/
   debug_shakespeare.yaml # ~1M params, fp32, debugger-friendly
   pretrain_small.yaml    # ~25M params, bf16, real small run
+  sft_fineweb.yaml       # SFT on top of the 110M fineweb pretrain
+  rl_gsm8k.yaml          # GRPO on GSM8K on top of the 110M fineweb SFT model
 ```
 
 ## Development

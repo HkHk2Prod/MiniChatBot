@@ -1,0 +1,107 @@
+# GRPO reinforcement learning on GSM8K, on top of the 110M fineweb SFT model.
+#
+# This is the final stage: SFT taught the model the chat format and basic
+# instruction following; RL nudges it toward *getting math right* using a
+# verifiable reward (GSM8KReward: 1.0 iff the final number matches). Don't
+# expect miracles at 110M — solve_rate climbing at all is the win here;
+# this is a faithful small-scale GRPO loop, not a frontier math model.
+#
+# How the loop works (see minichatbot/training/rl_trainer.py):
+#   each step: sample `rl.group_size` completions per prompt, score each,
+#   mean-center scores within the group -> advantages, one policy-gradient
+#   step. A step is dominated by sampling (batch_size prompts x group_size
+#   completions x up to max_new_tokens decode steps), so RL steps are much
+#   slower than SFT steps — minutes per few steps on a 4080. Keep
+#   batch_size modest.
+#
+# The model: block mirrors sft_fineweb.yaml exactly so the SFT checkpoint
+# loads cleanly.
+#
+# Prereqs:
+#   1. An sft_fineweb run with a ckpt_best.pt.
+#   2. The fineweb tokenizer.
+#   3. GSM8K downloaded as {question, answer} JSONL:
+#        python scripts/data/download_rl_data.py --source gsm8k --output-dir data/gsm8k
+#
+# Then launch:
+#   python scripts/train/rl.py --config configs/rl_gsm8k.yaml \
+#       --from-pretrained auto --pretrain-run-name sft_fineweb
+
+run_name: rl_gsm8k
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 32000            # match sft_fineweb / pretrain_fineweb
+  max_seq_len: 1024
+  n_layers: 12
+  n_heads: 12
+  d_model: 768
+  d_ff: 2048
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/fineweb/tokenizer.json
+
+data:
+  type: rl
+  train_path: data/gsm8k/train.jsonl
+  seq_len: 512                 # prompt-length cap; prompts longer than this are dropped
+  num_workers: 0
+  # Steers the policy to put a parseable final number where the reward can
+  # find it. Kept short — long system prompts eat the generation budget.
+  system_prompt: "Solve the problem step by step. End with the final answer on its own line as: #### <number>"
+
+rl:
+  group_size: 8                # completions sampled per prompt (the GRPO group)
+  max_new_tokens: 256          # generation budget per completion
+  temperature: 1.0             # must be > 0 — greedy collapses every group member to the same string
+  top_p: 1.0
+  top_k: null
+  normalize_advantage_std: true
+  reward: gsm8k
+
+optim:
+  lr: 1.0e-6                   # tiny — RL on a learned policy; large LR wrecks it fast
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 20
+  lr_schedule: constant
+  min_lr_ratio: 1.0
+
+trainer:
+  # 1500 steps x batch 4 prompts x group 8 = 48K sampled completions
+  # (~6 epochs over GSM8K's 7.5K train prompts). Expect this to take
+  # several hours on a 4080 — sampling is the bottleneck.
+  max_steps: 1500
+  batch_size: 4                # prompts per step; effective rollout = 4 x group_size = 32 seqs/fwd
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 5                 # RL steps are slow & each one is informative
+  - type: jsonl
+  - type: sample
+    params:
+      every: 100
+      chat_template: true
+      stop_on_eos: true
+      prompts:
+        - "Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did she sell altogether in April and May?"
+        - "Weng earns $12 an hour for babysitting. Yesterday, she just did 50 minutes of babysitting. How much did she earn?"
+      max_new_tokens: 256
+  - type: checkpoint
+    params:
+      every: 250
+      keep_last_k: 2
