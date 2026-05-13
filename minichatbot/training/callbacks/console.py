@@ -81,8 +81,13 @@ class ConsoleCallback(Callback):
         if ctx.tokens_per_sec is not None:
             parts.append(f"tok/s {ctx.tokens_per_sec:,.0f}")
         # Stage-specific scalars (e.g. RL's reward_mean / solve_rate).
+        # Skip sticky state the checkpoint callback parks in ctx.extra
+        # (best_step / best_loss / best_path / *_path) — that belongs in
+        # jsonl/tensorboard logs, not echoed on every console line.
         for k, v in ctx.extra.items():
-            if isinstance(v, (int, float)):
+            if k.startswith("best_") or k.endswith("_path"):
+                continue
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
                 parts.append(f"{k} {v:.3f}")
         parts.append(f"sps {sps:.2f}")
         parts.append(f"elapsed {_fmt_elapsed(elapsed)}")
