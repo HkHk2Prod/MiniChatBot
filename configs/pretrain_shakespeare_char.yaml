@@ -40,7 +40,7 @@ model:
   n_layers: 4
   n_heads: 4
   d_model: 128
-  d_ff: 512
+  d_ff: 384
   dropout: 0.1                # mild regularization helps on small corpora
   tie_embeddings: true
   norm_type: rmsnorm

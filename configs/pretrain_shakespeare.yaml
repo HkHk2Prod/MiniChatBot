@@ -24,7 +24,7 @@ model:
   n_layers: 6
   n_heads: 6
   d_model: 384
-  d_ff: 1536
+  d_ff: 1024
   dropout: 0.1                 # small dropout helps on a small corpus
   tie_embeddings: true
   norm_type: rmsnorm

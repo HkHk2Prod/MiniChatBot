@@ -6,16 +6,16 @@
 # English; FineWeb-Edu fixes that.
 #
 # Position in the ladder:
-#   pretrain_tinystories (29M, ~25M tokens)
+#   pretrain_tinystories (23M, ~25M tokens)
 #     -> pretrain_fineweb.yaml (this, 110M, ~1.3B tokens trained on 2B-token corpus)
 #
 # Sizing (RTX 4080 16GB):
-#   ~110M params (12L, 12H, d_model=768, d_ff=3072)
+#   ~110M params (12L, 12H, d_model=768, d_ff=2048)
 #   vocab 32K — proper coverage for general English, not the 8K
 #     tinystories vocab that fragments rare words
 #   seq_len 1024 — captures longer contexts than tinystories' 512
 #   batch 16, grad_accum 2 -> effective 32; ~12-13GB VRAM in bf16
-#   40K steps × 32 × 1024 = 1.31B tokens trained — ~65% of Chinchilla
+#   40K steps × 32 × 1024 = 1.31B tokens trained — ~60% of Chinchilla
 #     optimal (~2.2B for 110M), single epoch over the 2M-doc corpus
 #     with no repetition. Bump max_steps to ~67K for full Chinchilla.
 #
@@ -43,7 +43,7 @@ model:
   n_layers: 12
   n_heads: 12
   d_model: 768
-  d_ff: 3072
+  d_ff: 2048
   dropout: 0.0
   tie_embeddings: true
   norm_type: rmsnorm

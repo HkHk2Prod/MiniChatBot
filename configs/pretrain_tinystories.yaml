@@ -8,7 +8,7 @@
 # meaningful; small enough to iterate on.
 #
 # Sizing rationale (TinyStories paper sweet spot for coherent narratives):
-#   ~25M params (6L, 8H, d_model=512, d_ff=2048)
+#   ~23M params (6L, 8H, d_model=512, d_ff=1408)
 #   8K vocab — TinyStories deliberately uses a limited vocabulary
 #   seq_len 512 — most stories fit comfortably below this
 #   batch 32, bf16 -> fits ~14GB VRAM on a 16GB card with margin
@@ -37,7 +37,7 @@ model:
   n_layers: 6
   n_heads: 8
   d_model: 512
-  d_ff: 2048
+  d_ff: 1408
   dropout: 0.0
   tie_embeddings: true
   norm_type: rmsnorm

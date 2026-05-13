@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import torch
 from torch.utils.data import DataLoader
@@ -25,6 +25,10 @@ from minichatbot.training.callbacks import CALLBACK_REGISTRY
 from minichatbot.training.losses import LOSS_REGISTRY
 from minichatbot.training.optim import build_optimizer, build_scheduler
 from minichatbot.training.trainer import Trainer
+from minichatbot.utils.model_config_check import (
+    parse_ckpt_model_config,
+    reconcile_model_config,
+)
 from minichatbot.utils.torch_helpers import resolve_device
 
 
@@ -104,16 +108,36 @@ def build_and_train(
         else None
     )
 
-    model_cls = MODEL_REGISTRY[cfg.model.type]
-    model = model_cls.from_config(cfg.model).to(device)
+    # Pre-load checkpoint header for --resume or --from-pretrained so we
+    # can reconcile its saved model_config with the YAML BEFORE building
+    # the model — otherwise a shape mismatch fails inside load_state_dict
+    # with cryptic size errors. Reused below for the actual weight load,
+    # so we still only torch.load once per run.
+    incoming_path = resume_ckpt if resume_ckpt is not None else pretrained_ckpt
+    incoming_state: dict[str, Any] | None = None
+    startup_warnings: list[str] = []
+    effective_model_cfg = cfg.model
+    if incoming_path is not None:
+        incoming_state = torch.load(
+            incoming_path, map_location=device, weights_only=False
+        )
+        if "model_config" in incoming_state:
+            ckpt_model_cfg = parse_ckpt_model_config(incoming_state["model_config"])
+            mode = "resume" if resume_ckpt is not None else "from_pretrained"
+            effective_model_cfg, startup_warnings = reconcile_model_config(
+                cfg.model, ckpt_model_cfg, mode=mode
+            )
+
+    model_cls = MODEL_REGISTRY[effective_model_cfg.type]
+    model = model_cls.from_config(effective_model_cfg).to(device)
 
     # Bootstrap from pretrain BEFORE optimizer/scheduler are built so the
     # optimizer's parameter list is correct for the (possibly torch.compiled)
     # model. Step counter intentionally stays at 0.
     if pretrained_ckpt is not None:
         print(f"loading pretrain weights from {pretrained_ckpt}")
-        state = torch.load(pretrained_ckpt, map_location=device, weights_only=False)
-        model.load_state_dict(state["model"])
+        assert incoming_state is not None  # set in the pre-load block above
+        model.load_state_dict(incoming_state["model"])
 
     if cfg.trainer.compile:
         # torch.compile returns an OptimizedModule wrapper. At runtime it
@@ -146,11 +170,14 @@ def build_and_train(
         run_dir=run_dir,
         device=device,
         tokenizer=tokenizer,
+        startup_warnings=startup_warnings,
     )
 
     if resume_ckpt is not None:
         print(f"resuming from {resume_ckpt} (will continue past step {trainer.step})")
-        trainer.load_checkpoint(resume_ckpt, map_location=device)
+        trainer.load_checkpoint(
+            resume_ckpt, map_location=device, preloaded_state=incoming_state
+        )
         print(f"resumed at step {trainer.step}")
 
     trainer.fit()
