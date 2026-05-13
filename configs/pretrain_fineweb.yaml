@@ -14,7 +14,10 @@
 #   vocab 32K — proper coverage for general English, not the 8K
 #     tinystories vocab that fragments rare words
 #   seq_len 1024 — captures longer contexts than tinystories' 512
-#   batch 16, grad_accum 2 -> effective 32; ~12-13GB VRAM in bf16
+#   batch 8, grad_accum 4 -> effective 32; ~9-10GB VRAM in bf16
+#     (batch=16 OOMed at ~13.8GB on a 16GB 4080 once step-0 eval had
+#     fragmented the allocator; halving the per-step batch nearly
+#     halves activation memory while keeping the effective batch.)
 #   40K steps × 32 × 1024 = 1.31B tokens trained — ~60% of Chinchilla
 #     optimal (~2.2B for 110M), single epoch over the 2M-doc corpus
 #     with no repetition. Bump max_steps to ~67K for full Chinchilla.
@@ -70,8 +73,8 @@ optim:
 
 trainer:
   max_steps: 40000
-  batch_size: 16
-  grad_accum_steps: 2          # effective batch 32 — stabler grads at this scale
+  batch_size: 8
+  grad_accum_steps: 4          # effective batch 32 — stabler grads at this scale
   grad_clip: 1.0
   precision: bf16
   compile: false               # flip on once stable for ~10-20% speedup
