@@ -92,3 +92,7 @@ callbacks:
         - "The little girl"
         - "One day, a"
       max_new_tokens: 96
+
+  - type: benchmark              # end-of-training, write benchmark_pretrain.txt next to checkpoints
+    params:
+      phase: pretrain

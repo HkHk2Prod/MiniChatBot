@@ -62,3 +62,7 @@ callbacks:
       prompts:
         - "Once upon a time"
       max_new_tokens: 64
+
+  - type: benchmark              # end-of-training, write benchmark_pretrain.txt next to checkpoints
+    params:
+      phase: pretrain

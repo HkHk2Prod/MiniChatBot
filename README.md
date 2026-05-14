@@ -74,7 +74,7 @@ python scripts/data/prepare_data.py \
     --output data/shakespeare/ --val-frac 0.05
 
 # 4. Train
-python scripts/train/pretrain.py --config configs/debug_shakespeare.yaml
+python scripts/train/pretrain.py --config configs/1.3M/debug_shakespeare.yaml
 ```
 
 Outputs land in `runs/<timestamp>_<run_name>/` — checkpoints, JSONL metrics, samples, full config snapshot, and a teed log of stdout/stderr.
@@ -94,7 +94,7 @@ python scripts/data/download_corpus.py --source fineweb_edu --output data/finewe
     --subset sample-10BT --max-docs 1000000
 ```
 
-Then point [configs/pretrain_small.yaml](configs/pretrain_small.yaml) (or your own copy) at the resulting `train.bin` / `val.bin` and adjust `model.*`, `trainer.batch_size`, `trainer.precision`, etc.
+Then point [configs/29M/pretrain_small.yaml](configs/29M/pretrain_small.yaml) (or your own copy) at the resulting `train.bin` / `val.bin` and adjust `model.*`, `trainer.batch_size`, `trainer.precision`, etc.
 
 ## Data sources & references
 

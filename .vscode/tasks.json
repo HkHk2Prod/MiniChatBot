@@ -220,7 +220,7 @@
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/pretrain.py", "--config", "configs/debug_shakespeare.yaml"],
+      "args": ["scripts/train/pretrain.py", "--config", "configs/1.3M/debug_shakespeare.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -231,7 +231,7 @@
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/pretrain.py", "--config", "configs/pretrain_shakespeare.yaml"],
+      "args": ["scripts/train/pretrain.py", "--config", "configs/10M/pretrain_shakespeare.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -242,7 +242,7 @@
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/pretrain.py", "--config", "configs/pretrain_tinystories.yaml"],
+      "args": ["scripts/train/pretrain.py", "--config", "configs/29M/pretrain_tinystories.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -253,7 +253,7 @@
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/pretrain.py", "--config", "configs/pretrain_fineweb.yaml"],
+      "args": ["scripts/train/pretrain.py", "--config", "configs/100M/pretrain_fineweb.yaml"],
       "options": {
         "cwd": "${workspaceFolder}",
         "env": { "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True" }
@@ -269,7 +269,7 @@
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
       "args": [
         "scripts/train/sft.py",
-        "--config", "configs/sft_smoketest.yaml",
+        "--config", "configs/1.3M/sft_smoketest.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "debug_shakespeare"
       ],
@@ -285,7 +285,7 @@
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
       "args": [
         "scripts/train/sft.py",
-        "--config", "configs/sft_shakespeare.yaml",
+        "--config", "configs/10M/sft_shakespeare.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "pretrain_shakespeare"
       ],
@@ -301,7 +301,7 @@
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
       "args": [
         "scripts/train/sft.py",
-        "--config", "configs/sft_tinystories.yaml",
+        "--config", "configs/29M/sft_tinystories.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "pretrain_tinystories"
       ],
@@ -317,7 +317,7 @@
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
       "args": [
         "scripts/train/sft.py",
-        "--config", "configs/sft_fineweb.yaml",
+        "--config", "configs/100M/sft_fineweb.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "pretrain_fineweb"
       ],
@@ -470,7 +470,7 @@
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/rl.py", "--config", "configs/rl_smoketest.yaml"],
+      "args": ["scripts/train/rl.py", "--config", "configs/1.3M/rl_smoketest.yaml"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -483,7 +483,7 @@
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
       "args": [
         "scripts/train/rl.py",
-        "--config", "configs/rl_gsm8k.yaml",
+        "--config", "configs/100M/rl_gsm8k.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "sft_fineweb"
       ],
@@ -505,6 +505,69 @@
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
+    },
+    {
+      "label": "[100M] [6] Chat: latest rl_gsm8k run",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/chat.py",
+        "--run-name", "rl_gsm8k",
+        "--max-new-tokens", "256",
+        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "0.8",
+        "--frequency-penalty", "0.4", "--presence-penalty", "0.4",
+        "--system", "Solve the problem step by step. End with the final answer on its own line as: #### <number>"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [7p] Benchmark: latest pretrain_fineweb run",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/benchmark.py",
+        "--phase", "pretrain",
+        "--run-name", "pretrain_fineweb"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [7s] Benchmark: latest sft_fineweb run",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/benchmark.py",
+        "--phase", "sft",
+        "--run-name", "sft_fineweb"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [7r] Benchmark: latest rl_gsm8k run (with GSM8K solve_rate)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/benchmark.py",
+        "--phase", "rl",
+        "--run-name", "rl_gsm8k"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
     }
   ],
   "inputs": [
@@ -513,34 +576,34 @@
       "type": "pickString",
       "description": "Pretrain config to resume",
       "options": [
-        { "label": "[1.3M] debug_shakespeare", "value": "configs/debug_shakespeare.yaml" },
-        { "label": "[10M]  pretrain_shakespeare", "value": "configs/pretrain_shakespeare.yaml" },
-        { "label": "[29M]  pretrain_tinystories", "value": "configs/pretrain_tinystories.yaml" },
-        { "label": "[100M] pretrain_fineweb", "value": "configs/pretrain_fineweb.yaml" }
+        { "label": "[1.3M] debug_shakespeare", "value": "configs/1.3M/debug_shakespeare.yaml" },
+        { "label": "[10M]  pretrain_shakespeare", "value": "configs/10M/pretrain_shakespeare.yaml" },
+        { "label": "[29M]  pretrain_tinystories", "value": "configs/29M/pretrain_tinystories.yaml" },
+        { "label": "[100M] pretrain_fineweb", "value": "configs/100M/pretrain_fineweb.yaml" }
       ],
-      "default": "configs/pretrain_tinystories.yaml"
+      "default": "configs/29M/pretrain_tinystories.yaml"
     },
     {
       "id": "sftConfig",
       "type": "pickString",
       "description": "SFT config to resume",
       "options": [
-        { "label": "[1.3M] sft_smoketest", "value": "configs/sft_smoketest.yaml" },
-        { "label": "[10M]  sft_shakespeare", "value": "configs/sft_shakespeare.yaml" },
-        { "label": "[29M]  sft_tinystories", "value": "configs/sft_tinystories.yaml" },
-        { "label": "[100M] sft_fineweb", "value": "configs/sft_fineweb.yaml" }
+        { "label": "[1.3M] sft_smoketest", "value": "configs/1.3M/sft_smoketest.yaml" },
+        { "label": "[10M]  sft_shakespeare", "value": "configs/10M/sft_shakespeare.yaml" },
+        { "label": "[29M]  sft_tinystories", "value": "configs/29M/sft_tinystories.yaml" },
+        { "label": "[100M] sft_fineweb", "value": "configs/100M/sft_fineweb.yaml" }
       ],
-      "default": "configs/sft_tinystories.yaml"
+      "default": "configs/29M/sft_tinystories.yaml"
     },
     {
       "id": "rlConfig",
       "type": "pickString",
       "description": "RL config to resume",
       "options": [
-        { "label": "[1.3M] rl_smoketest", "value": "configs/rl_smoketest.yaml" },
-        { "label": "[100M] rl_gsm8k", "value": "configs/rl_gsm8k.yaml" }
+        { "label": "[1.3M] rl_smoketest", "value": "configs/1.3M/rl_smoketest.yaml" },
+        { "label": "[100M] rl_gsm8k", "value": "configs/100M/rl_gsm8k.yaml" }
       ],
-      "default": "configs/rl_gsm8k.yaml"
+      "default": "configs/100M/rl_gsm8k.yaml"
     },
     {
       "id": "resumeTarget",

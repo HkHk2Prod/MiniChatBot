@@ -1,0 +1,166 @@
+# Per-phase prompt sets for `scripts/inference/benchmark.py`.
+#
+# Three prompt groups per phase, in increasing difficulty:
+#
+#   near       — Very close to (or verbatim from) the training corpus.
+#                A working checkpoint should produce near-perfect output:
+#                fluent continuations for pretrain, accurate answers for
+#                sft, exact-match for rl. Failures here mean training
+#                didn't fit the data — something's broken.
+#
+#   generalize — Inside the same domain / format / style, but novel
+#                content the model could not have memorized. This is
+#                the real test: did it learn the *pattern* or just the
+#                *examples*? Most of any model's value lives here.
+#
+#   ood        — Outside the corpus entirely. Pretrain corpora are
+#                English text → code/SQL/JSON/foreign languages are ood.
+#                Alpaca SFT → multi-turn / long-form / unusual formats
+#                are ood. GSM8K RL → non-math chat is ood (also serves
+#                as a catastrophic-forgetting probe). Failures here
+#                are EXPECTED and informational, not a problem.
+#
+# The benchmark script writes the three groups into separate sections
+# (near → generalize → ood) in the output file and console. RL prompts
+# in `near` and `generalize` carry `reference` answers and are scored
+# by GSM8KReward; `ood` is plain-text and unscored.
+#
+# Per-corpus notes on the pretrain prompts:
+#   - pretrain_shakespeare uses Karpathy's tiny_shakespeare slice. We
+#     verified locally that it contains ROMEO, GLOUCESTER, JULIET, etc.
+#     but NOT Hamlet — so `HAMLET:` and "to be, or not to be" would be
+#     ood for that model. The prompts below pick speakers that ARE in
+#     the slice.
+#   - pretrain_tinystories uses the TinyStories children's-stories
+#     corpus; "Once upon a time" / "The little girl" / "One day" are
+#     canonical openers in that distribution.
+#   - pretrain_fineweb uses FineWeb-Edu (educational English web text).
+#     `near` prompts pick generic educational-text openers.
+#
+# Any given pretrain run only matches one corpus, so within `near` /
+# `generalize` only the matching prompts will look strong. That's fine
+# — the spread is intentional and lets one prompt set cover all three
+# pretrain configs.
+
+pretrain:
+  description: >
+    Coherent text continuation in the style of the pretrain corpus.
+  near:
+    prompts:
+      # TinyStories — canonical openers (Phuong et al. distribution).
+      - "Once upon a time, there was a"
+      - "One day, a"
+      # tiny_shakespeare — actual top speakers verified by grep.
+      - "ROMEO:"
+      - "GLOUCESTER:"
+      - "JULIET:"
+      # FineWeb-Edu — generic educational-text openers.
+      - "Scientists have discovered that"
+      - "The process of"
+  generalize:
+    prompts:
+      # Stories with novel content but TinyStories-style names/plots.
+      - "Tom found a shiny coin on the ground and decided to"
+      - "Lily wanted to bake a cake but she didn't have"
+      # Shakespeare-style: a name not in the corpus, plus a continuation
+      # that demands early-modern verse — tests format generalization.
+      - "BENVOLIO:\nMy lord, the news from Verona is"
+      # Educational content the model has to compose from world knowledge,
+      # not memorize verbatim.
+      - "The Great Wall of China was built to"
+      - "Many historians believe that the fall of Rome was caused by"
+  ood:
+    prompts:
+      # Code / structured data — absent from tiny_shakespeare and
+      # TinyStories; FineWeb-Edu has only trace amounts at best.
+      - "def fibonacci(n):"
+      - "SELECT name, age FROM users WHERE"
+      - "{\"users\": [{\"id\": 1,"
+      - "import torch\nmodel ="
+      # Non-English — pretrain corpora are English-filtered.
+      - "Bonjour, comment allez-vous aujourd'hui?"
+
+sft:
+  description: >
+    Single-turn instruction following / Q&A in chat format. Targets the
+    alpaca-cleaned SFT corpus used by sft_tinystories and sft_fineweb.
+  system: null
+  near:
+    prompts:
+      # Stock alpaca-style instruction prompts: short, common-knowledge,
+      # the question shape Alpaca is saturated with.
+      - "What is the capital of France?"
+      - "List three primary colors."
+      - "Translate 'hello' to French."
+      - "What does HTTP stand for?"
+      - "Name two planets in our solar system."
+  generalize:
+    prompts:
+      # Same chat format and skill mix as Alpaca, but specific scenarios
+      # the model hasn't seen verbatim — tests composition, not lookup.
+      - "Write a short poem about a robot who learns to paint."
+      - "Explain the difference between weather and climate in simple terms."
+      - "Give me three tips for learning a new language."
+      - "Write a 2-sentence story about a curious cat that found a key."
+      - "Summarize this in one sentence: The Industrial Revolution began in Britain in the late 18th century and spread to other parts of the world."
+  ood:
+    prompts:
+      # Outside alpaca's typical coverage — long-form, multi-turn, or
+      # tasks Alpaca doesn't really teach a 110M model. Expected to be
+      # weak even on a good SFT checkpoint.
+      - "Write a 500-word essay on the causes of World War I."
+      - "Continue this conversation:\nUser: Hi.\nAssistant: Hello!\nUser: What's your favorite color?"
+      - "Implement a red-black tree in C++."
+      - "Translate 'Hello, world' to Klingon."
+      - "What is 1247 multiplied by 893? Show your reasoning step by step."
+
+rl:
+  description: >
+    GSM8K-style multi-step math word problems. `near` is verbatim from
+    GSM8K training-distribution canonical examples; `generalize` is
+    novel grade-school word problems in the same template; both are
+    scored by exact-match on the final number after `####`. `ood` is
+    non-math chat — probes catastrophic forgetting of general
+    conversational ability from RL specialization, and is unscored.
+  system: "Solve the problem step by step. End with the final answer on its own line as: #### <number>"
+  near:
+    prompts:
+      # Canonical GSM8K problems (these prompts appear verbatim in the
+      # GSM8K training split or are direct lifts from common citations).
+      - prompt: "Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did she sell altogether in April and May?"
+        reference: "72"
+      - prompt: "Weng earns $12 an hour for babysitting. Yesterday, she just did 50 minutes of babysitting. How much did she earn?"
+        reference: "10"
+      - prompt: "James writes a 3-page letter to 2 different friends twice a week. How many pages does he write a year?"
+        reference: "624"
+      - prompt: "Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?"
+        reference: "18"
+      - prompt: "A robe takes 2 bolts of blue fiber and half that much white fiber. How many bolts in total does it take?"
+        reference: "3"
+  generalize:
+    prompts:
+      # Held-out: grade-school word problems in GSM8K style but written
+      # for this benchmark, so they (almost certainly) aren't in any
+      # GSM8K split. Tests whether the policy learned the reasoning
+      # pattern or just memorized.
+      - prompt: "A book has 240 pages. If Anna reads 30 pages a day, how many days will it take her to finish?"
+        reference: "8"
+      - prompt: "A pizza is cut into 8 slices. Mary eats 3 slices and her friend eats 2. How many slices remain?"
+        reference: "3"
+      - prompt: "There are 24 students in a class. If 3/4 of them like math, how many students like math?"
+        reference: "18"
+      - prompt: "A bus ticket costs $4. If 12 people buy tickets, how much money does the bus company earn?"
+        reference: "48"
+      - prompt: "Tom has 5 bags of marbles with 9 marbles in each bag. He gives 12 marbles to his sister. How many marbles does Tom have left?"
+        reference: "33"
+  ood:
+    prompts:
+      # Non-math chat — the SFT base could handle these; the RL'd policy
+      # may have drifted toward emitting math reasoning or `####` markers
+      # even when inappropriate. Comparing rl vs sft on these is the
+      # forgetting probe.
+      - "What is the capital of France?"
+      - "Write a short poem about the sea."
+      - "Tell me a joke."
+      - "Translate 'good morning' to Spanish."
+      - "What is the chemical formula for water?"

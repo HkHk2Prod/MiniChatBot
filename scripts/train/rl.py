@@ -2,18 +2,18 @@
 
 Usage:
     # Start from the latest SFT run with a ckpt_best.pt
-    python scripts/train/rl.py --config configs/rl_gsm8k.yaml --from-pretrained auto
+    python scripts/train/rl.py --config configs/100M/rl_gsm8k.yaml --from-pretrained auto
 
     # Or point at a specific SFT run / checkpoint
-    python scripts/train/rl.py --config configs/rl_gsm8k.yaml \\
+    python scripts/train/rl.py --config configs/100M/rl_gsm8k.yaml \\
         --from-pretrained runs/<sft_dir>/ckpt_best.pt
 
     # Filter --from-pretrained=auto to a specific SFT run name
-    python scripts/train/rl.py --config configs/rl_gsm8k.yaml --from-pretrained auto \\
+    python scripts/train/rl.py --config configs/100M/rl_gsm8k.yaml --from-pretrained auto \\
         --pretrain-run-name sft_tinystories
 
     # Continue a paused RL run
-    python scripts/train/rl.py --config configs/rl_gsm8k.yaml --resume auto
+    python scripts/train/rl.py --config configs/100M/rl_gsm8k.yaml --resume auto
 
 Defaults: --dataset rl, --collator rl, --loss grpo. The RL knobs
 (group_size, max_new_tokens, sampling temperature/top-p, reward name)

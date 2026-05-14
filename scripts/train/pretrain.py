@@ -1,7 +1,7 @@
 """Pretrain a small language model from a YAML config.
 
 Usage:
-    python scripts/train/pretrain.py --config configs/pretrain_small.yaml
+    python scripts/train/pretrain.py --config configs/29M/pretrain_small.yaml
 
 Builds tokenizer, datasets, model, optimizer, scheduler, loss, and
 callbacks from registries based on the YAML; runs Trainer.fit().

@@ -82,3 +82,7 @@ callbacks:
     params:
       every: 200
       keep_last_k: 1
+
+  - type: benchmark              # end-of-training, write benchmark_pretrain.txt next to checkpoints
+    params:
+      phase: pretrain

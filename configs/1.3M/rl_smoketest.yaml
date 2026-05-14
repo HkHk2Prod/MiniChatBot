@@ -79,3 +79,7 @@ callbacks:
     params:
       every: 10
       keep_last_k: 1
+
+  - type: benchmark              # end-of-training, write benchmark_rl.txt (with solve_rate) next to checkpoints
+    params:
+      phase: rl

@@ -85,3 +85,7 @@ callbacks:
     params:
       every: 250
       keep_last_k: 1
+
+  - type: benchmark              # end-of-training, write benchmark_sft.txt next to checkpoints
+    params:
+      phase: sft
