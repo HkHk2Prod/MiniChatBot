@@ -92,3 +92,12 @@ callbacks:
         - "The little girl"
         - "One day, a"
       max_new_tokens: 96
+      # Top-p with mild penalties instead of greedy: greedy on a small
+      # undertrained base model collapses into repetition loops and hides
+      # how the chat REPL will actually behave. These settings match the
+      # chat task defaults so mid-training samples preview real generation.
+      strategy: top_p
+      p: 0.9
+      temperature: 0.8
+      frequency_penalty: 0.3
+      presence_penalty: 0.3

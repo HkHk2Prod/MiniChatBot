@@ -63,6 +63,11 @@ callbacks:
         - "ROMEO:"
         - "To be, or not to be"
       max_new_tokens: 48
+      strategy: top_p
+      p: 0.9
+      temperature: 0.8
+      frequency_penalty: 0.3
+      presence_penalty: 0.3
   - type: checkpoint
     params:
       every: 1000
