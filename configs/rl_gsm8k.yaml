@@ -80,8 +80,13 @@ trainer:
   # (~6 epochs over GSM8K's 7.5K train prompts). Expect this to take
   # several hours on a 4080 — sampling is the bottleneck.
   max_steps: 1500
-  batch_size: 4                # prompts per step; effective rollout = 4 x group_size = 32 seqs/fwd
-  grad_accum_steps: 1
+  # batch_size 1 (was 4) + grad_accum 4 (was 1): same effective batch, but
+  # peak GPU memory is set by ONE forward+backward, not the sum across
+  # accum micro-steps. The policy backward over batch_size * group_size
+  # sequences was OOMing 110M on a 16GB 4080; this caps it at group_size
+  # sequences per backward instead, with 4 sequential rollouts per step.
+  batch_size: 1                # prompts per step; rollout = 1 x group_size = 8 seqs/fwd
+  grad_accum_steps: 4          # preserves effective batch of 4 prompts
   grad_clip: 1.0
   precision: bf16
   compile: false
