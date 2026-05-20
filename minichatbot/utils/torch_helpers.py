@@ -19,6 +19,17 @@ def resolve_device(device: str) -> torch.device:
     return torch.device(device)
 
 
+def unwrap_compiled(model: nn.Module) -> nn.Module:
+    """Return the original module if `model` was wrapped by `torch.compile`.
+
+    `torch.compile` returns an `OptimizedModule` that registers the wrapped
+    model as `_orig_mod`. Its `state_dict()` therefore emits `_orig_mod.*`
+    keys, which won't `load_state_dict` into a fresh (uncompiled) instance —
+    so every save / load path must go through the unwrapped module.
+    """
+    return getattr(model, "_orig_mod", model)
+
+
 @contextmanager
 def eval_mode(model: nn.Module) -> Iterator[None]:
     """Temporarily set `model.eval()`; restore train mode on exit even if an exception fires.

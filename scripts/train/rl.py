@@ -36,7 +36,7 @@ import argparse
 
 from minichatbot.config import load_config
 from minichatbot.training.cli import add_train_args, resolve_train_ckpts
-from minichatbot.training.rl_runner import build_and_train_rl
+from minichatbot.training.runner import build_and_train
 
 
 def main() -> None:
@@ -52,8 +52,9 @@ def main() -> None:
     cfg = load_config(args.config)
     pretrained_ckpt, resume_ckpt = resolve_train_ckpts(args, cfg)
 
-    build_and_train_rl(
+    build_and_train(
         cfg,
+        stage="rl",
         dataset_key=args.dataset,
         collator_key=args.collator,
         loss_key=args.loss,

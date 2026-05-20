@@ -83,3 +83,7 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_rl.txt (with solve_rate) next to checkpoints
     params:
       phase: rl
+      # Default is 256, which overflows this smoketest's 256-token
+      # context once the chat-rendered prompt is accounted for. 128
+      # leaves room for the longest GSM8K prompt in prompts.yaml.
+      max_new_tokens: 128

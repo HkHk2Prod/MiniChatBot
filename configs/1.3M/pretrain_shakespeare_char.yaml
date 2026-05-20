@@ -87,7 +87,7 @@ callbacks:
       every: 500
       max_new_tokens: 200
       strategy: top_p           # MUCH better than greedy on undertrained models
-      p: 0.9
+      top_p: 0.9
       temperature: 0.8
       prompts:
         - "ROMEO:"
@@ -101,3 +101,5 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_pretrain.txt next to checkpoints
     params:
       phase: pretrain
+      # Default is 256, which overflows this config's 256-token context.
+      max_new_tokens: 128

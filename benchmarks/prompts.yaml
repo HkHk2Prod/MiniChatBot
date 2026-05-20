@@ -122,7 +122,13 @@ rl:
     scored by exact-match on the final number after `####`. `ood` is
     non-math chat — probes catastrophic forgetting of general
     conversational ability from RL specialization, and is unscored.
-  system: "Solve the problem step by step. End with the final answer on its own line as: #### <number>"
+  # Intentionally no `system:` pinned: BenchmarkCallback falls back to
+  # `ctx.config.data.system_prompt` so the benchmark always uses the
+  # exact system prompt the policy was trained on. Pinning one here
+  # would silently desync any run whose training config diverges (the
+  # rl_smoketest config does — different short prompt for the same
+  # task). If a future caller wants a different benchmark prompt than
+  # the training one, set it explicitly here and the fallback yields.
   near:
     prompts:
       # Canonical GSM8K problems (these prompts appear verbatim in the

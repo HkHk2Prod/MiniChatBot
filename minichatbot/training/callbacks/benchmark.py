@@ -19,31 +19,40 @@ Configure in your run's `callbacks:` block:
       params:
         phase: rl                  # pretrain | sft | rl
         strategy: top_p            # any registered SamplingStrategy
-        p: 0.9                     # strategy kwargs (e.g. p / k / temperature)
         temperature: 0.8
+        top_p: 0.9                 # used when strategy == top_p
+        top_k: 50                  # used when strategy == top_k
         frequency_penalty: 0.5
         presence_penalty: 0.5
         max_new_tokens: 256
 
 `phase` is the only required param. The rest default to chat.py's flag
 defaults so the benchmark output matches what an end-user chatting with
-the trained model would actually see.
+the trained model would actually see. The same `build_strategy` used by
+`scripts/inference/benchmark.py` powers strategy construction, so
+callback and CLI can't drift on defaults.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import torch
 
 from minichatbot.inference.benchmark import PHASES, load_phase_prompts, run_benchmark
+from minichatbot.inference.cli import build_strategy
 from minichatbot.inference.generator import Generator
-from minichatbot.inference.strategies import SAMPLING_REGISTRY
 from minichatbot.tokenizer.bpe import IM_END_TOKEN
 from minichatbot.training.callbacks import CALLBACK_REGISTRY
 from minichatbot.training.callbacks.base import Callback, CallbackContext
 from minichatbot.utils.checkpoints import find_best_checkpoint
+from minichatbot.utils.torch_helpers import unwrap_compiled
+
+# Resolved relative to the repo root so the default works regardless of
+# the CWD the training run was launched from — a CWD-relative default
+# silently degraded any run started outside the repo root to a "skipped:
+# file not found" log with no recovery path.
+_DEFAULT_PROMPTS_FILE = Path(__file__).resolve().parents[3] / "benchmarks" / "prompts.yaml"
 
 
 @CALLBACK_REGISTRY.register("benchmark")
@@ -53,32 +62,28 @@ class BenchmarkCallback(Callback):
     def __init__(
         self,
         phase: str,
-        prompts_file: str = "benchmarks/prompts.yaml",
+        prompts_file: str | None = None,
         max_new_tokens: int = 256,
         strategy: str = "top_p",
+        temperature: float = 0.8,
+        top_k: int = 50,
+        top_p: float = 0.9,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
-        **strategy_kwargs: Any,
     ) -> None:
         if phase not in PHASES:
             raise ValueError(
                 f"BenchmarkCallback.phase must be one of {PHASES}, got {phase!r}"
             )
-        # Sane chat-style defaults for the two pluggable strategy kwargs
-        # so callers can omit them. Explicit kwargs still win.
-        if strategy == "top_p":
-            strategy_kwargs.setdefault("p", 0.9)
-            strategy_kwargs.setdefault("temperature", 0.8)
-        elif strategy == "top_k":
-            strategy_kwargs.setdefault("k", 50)
-            strategy_kwargs.setdefault("temperature", 0.8)
-        elif strategy == "temperature":
-            strategy_kwargs.setdefault("temperature", 0.8)
         self.phase = phase
+        # None -> repo-root default resolved at call time so users can still
+        # opt into a CWD-relative path by passing one explicitly.
         self.prompts_file = prompts_file
         self.max_new_tokens = max_new_tokens
         self.strategy_name = strategy
-        self.strategy_kwargs = strategy_kwargs
+        self.temperature = temperature
+        self.top_k = top_k
+        self.top_p = top_p
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
 
@@ -96,15 +101,23 @@ class BenchmarkCallback(Callback):
             print("[benchmark] skipped: trainer didn't provide a tokenizer.")
             return
 
+        prompts_path = Path(self.prompts_file) if self.prompts_file else _DEFAULT_PROMPTS_FILE
         try:
-            phase_cfg = load_phase_prompts(self.prompts_file, self.phase)
+            phase_cfg = load_phase_prompts(prompts_path, self.phase)
         except FileNotFoundError:
             print(
-                f"[benchmark] skipped: prompts file {self.prompts_file!r} not "
+                f"[benchmark] skipped: prompts file {prompts_path} not "
                 f"found. Pass a different `prompts_file` in the callback "
                 f"params or create the file."
             )
             return
+
+        # Fall back to the training-time system prompt when the benchmark
+        # YAML doesn't pin one. Keeps the benchmark measuring what the
+        # policy was actually conditioned on instead of silently drifting
+        # because two files have to be edited in lockstep.
+        if phase_cfg.get("system") is None and ctx.config.data.system_prompt:
+            phase_cfg = {**phase_cfg, "system": ctx.config.data.system_prompt}
 
         # Chat phases need the chat turn-end; pretrain stops at pretrain EOS.
         if self.phase in ("sft", "rl"):
@@ -119,9 +132,14 @@ class BenchmarkCallback(Callback):
         else:
             stop_id = ctx.tokenizer.eos_id
 
-        strat_cls = SAMPLING_REGISTRY[self.strategy_name]
+        strategy = build_strategy(
+            strategy=self.strategy_name,
+            temperature=self.temperature,
+            top_k=self.top_k,
+            top_p=self.top_p,
+        )
         generator = Generator(
-            strategy=strat_cls(**self.strategy_kwargs),
+            strategy=strategy,
             eos_id=stop_id,
             frequency_penalty=self.frequency_penalty,
             presence_penalty=self.presence_penalty,
@@ -132,17 +150,29 @@ class BenchmarkCallback(Callback):
         # actually run (best-by-val-loss, not the possibly-overfit final
         # step). Only the SFT/pretrain flows write a best checkpoint; RL
         # has no validation pass, so this is a silent no-op there.
+        # `unwrap_compiled` matches save_checkpoint's symmetric path —
+        # the saved state_dict has no `_orig_mod.` prefix.
+        #
+        # We snapshot the current weights and restore them after the run
+        # because `on_train_end` fires LIFO: later callbacks (notably
+        # CheckpointCallback's final periodic save) would otherwise
+        # serialize the swapped-in best weights under the last-step
+        # filename. Clone keeps the snapshot stable when the in-place
+        # load_state_dict below overwrites the live tensors.
         device = next(ctx.model.parameters()).device
+        inner = unwrap_compiled(ctx.model)
         source_label = f"final step {ctx.step}"
         best_path = find_best_checkpoint(Path(ctx.run_dir))
+        saved_state: dict[str, torch.Tensor] | None = None
         if best_path is not None:
+            saved_state = {k: v.detach().clone() for k, v in inner.state_dict().items()}
             state = torch.load(best_path, map_location=device, weights_only=False)
-            ctx.model.load_state_dict(state["model"])
+            inner.load_state_dict(state["model"])
             source_label = f"ckpt_best.pt (step {state.get('step', '?')})"
 
-        kwarg_str = ", ".join(f"{k}={v}" for k, v in sorted(self.strategy_kwargs.items()))
         strategy_desc = (
-            f"{self.strategy_name}({kwarg_str})" if kwarg_str else self.strategy_name
+            f"{self.strategy_name}(temp={self.temperature}, "
+            f"top_k={self.top_k}, top_p={self.top_p})"
         )
         header_lines = [
             f"run_dir:           {ctx.run_dir}",
@@ -160,15 +190,23 @@ class BenchmarkCallback(Callback):
         output_path = Path(ctx.run_dir) / f"benchmark_{self.phase}.txt"
         print(f"[benchmark] writing {output_path}")
         ctx.model.eval()
-        run_benchmark(
-            model=ctx.model,
-            tokenizer=ctx.tokenizer,
-            generator=generator,
-            device=device,
-            phase=self.phase,
-            phase_cfg=phase_cfg,
-            output_path=output_path,
-            max_new_tokens=self.max_new_tokens,
-            header_lines=header_lines,
-            verbose=False,    # training stdout is already crowded
-        )
+        try:
+            run_benchmark(
+                model=ctx.model,
+                tokenizer=ctx.tokenizer,
+                generator=generator,
+                device=device,
+                phase=self.phase,
+                phase_cfg=phase_cfg,
+                output_path=output_path,
+                max_new_tokens=self.max_new_tokens,
+                header_lines=header_lines,
+                verbose=False,    # training stdout is already crowded
+            )
+        finally:
+            # Restore in finally so an exception in run_benchmark — still
+            # caught one frame up by on_train_end's blanket except — does
+            # not leak the swapped-in weights into the rest of the
+            # on_train_end LIFO chain.
+            if saved_state is not None:
+                inner.load_state_dict(saved_state)

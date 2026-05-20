@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 import random
 from pathlib import Path
 
@@ -47,9 +48,14 @@ def main() -> None:
     rows = _examples(200, rng)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     path = OUT_DIR / "train.jsonl"
-    with path.open("w", encoding="utf-8") as f:
+    # Write to a sibling tmp file then atomically rename — matches the
+    # convention in download_rl_data.py so a Ctrl-C mid-write can't leave
+    # the dataset loader staring at a truncated file.
+    tmp_path = path.with_suffix(".jsonl.tmp")
+    with tmp_path.open("w", encoding="utf-8") as f:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    os.replace(tmp_path, path)
     print(f"wrote {len(rows):>4d} rows to {path}")
 
 

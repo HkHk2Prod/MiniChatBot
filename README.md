@@ -77,7 +77,7 @@ python scripts/data/prepare_data.py \
 python scripts/train/pretrain.py --config configs/1.3M/debug_shakespeare.yaml
 ```
 
-Outputs land in `runs/<timestamp>_<run_name>/` — checkpoints, JSONL metrics, samples, full config snapshot, and a teed log of stdout/stderr.
+Outputs land in `runs/<timestamp>_<run_name>/` — checkpoints, JSONL metrics, samples, `benchmark_<phase>.txt` (when the `benchmark` callback is configured), full config snapshot, and a teed log of stdout/stderr.
 
 VS Code users: the four matching launch configurations are in [.vscode/launch.json](.vscode/launch.json) — pick "Download corpus", "Train tokenizer", "Prepare data", then "Pretrain: debug_shakespeare". `F5` starts whichever is selected under the debugger.
 
@@ -95,6 +95,37 @@ python scripts/data/download_corpus.py --source fineweb_edu --output data/finewe
 ```
 
 Then point [configs/29M/pretrain_small.yaml](configs/29M/pretrain_small.yaml) (or your own copy) at the resulting `train.bin` / `val.bin` and adjust `model.*`, `trainer.batch_size`, `trainer.precision`, etc.
+
+## Three-stage pipeline (pretrain → SFT → RL)
+
+All three stages run from the same `Trainer` / `runner.build_and_train` machinery — the train scripts only swap the dataset/collator/loss registry keys and the trainer subclass. Each later stage starts from the previous stage's best checkpoint via `--from-pretrained auto`, which finds the latest matching run under `runs/` (narrow further with `--pretrain-run-name <name>`).
+
+```bash
+# Stage 1 — pretrain on FineWeb-Edu (see Quick start above for data prep)
+python scripts/train/pretrain.py --config configs/100M/pretrain_fineweb.yaml
+
+# Stage 2 — SFT on alpaca-cleaned instructions
+python scripts/data/download_sft_data.py --source alpaca_cleaned --output-dir data/alpaca
+python scripts/train/sft.py --config configs/100M/sft_fineweb.yaml --from-pretrained auto
+
+# Stage 3 — GRPO on GSM8K (binary verifiable reward)
+python scripts/data/download_rl_data.py --source gsm8k --output-dir data/gsm8k
+python scripts/train/rl.py --config configs/100M/rl_gsm8k.yaml --from-pretrained auto
+
+# Inspect what the resulting policy actually does
+python scripts/inference/benchmark.py --phase rl --run-name rl_gsm8k
+python scripts/inference/chat.py --run-name rl_gsm8k
+```
+
+To validate the pipeline end-to-end on a toy model before committing to a real run, the `1.3M/` configs exercise the same code paths in seconds on CPU:
+
+```bash
+python scripts/data/make_sft_smoketest_data.py
+python scripts/data/make_rl_smoketest_data.py
+python scripts/train/pretrain.py --config configs/1.3M/debug_shakespeare.yaml
+python scripts/train/sft.py      --config configs/1.3M/sft_smoketest.yaml --from-pretrained auto
+python scripts/train/rl.py       --config configs/1.3M/rl_smoketest.yaml  --from-pretrained auto
+```
 
 ## Data sources & references
 
@@ -126,7 +157,7 @@ All runtime behavior is set in YAML; see [configs/](configs/) for examples. The 
 | `rl` | GRPO knobs (RL only): `group_size`, `max_new_tokens`, `temperature`, `top_p`/`top_k`, `reward` |
 | `optim` | `lr`, `betas`, `warmup_steps`, `lr_schedule`, `weight_decay` |
 | `trainer` | `max_steps`, `batch_size`, `grad_accum_steps`, `precision`, `compile` |
-| `callbacks` | Ordered list — order matters; `logfile` first so its tee captures everything |
+| `callbacks` | Ordered list — order matters; `logfile` first so its tee captures everything. Add `benchmark` (last) for an end-of-run prompt-set evaluation written next to checkpoints. |
 
 Each component (model, tokenizer, dataset, loss, sampling strategy, callback) is built from its registry by `type` key — see the registry definitions under [minichatbot/](minichatbot/) for the available implementations.
 
@@ -134,12 +165,16 @@ Each component (model, tokenizer, dataset, loss, sampling strategy, callback) is
 
 ```
 minichatbot/
-  config.py              # typed YAML schema
+  config.py              # typed YAML schema (Config, ModelConfig, RLConfig, ...)
+  chat/                  # chat-template rendering (<|im_start|>...<|im_end|>)
   data/
     base.py              # BaseDataset (registry-dispatched factory)
     pretrain.py          # PretrainDataset (random-access over packed .bin)
-    collators/           # batch-level transforms (input_ids vs labels split, etc.)
-    sources/             # CorpusSource implementations (tiny_shakespeare, tiny_stories, fineweb_edu, hf_dataset)
+    sft.py               # SFTDataset (chat-templated JSONL)
+    rl.py                # RLPromptDataset (prompts + reference answers)
+    corpus_iter.py       # streaming corpus iterator for tokenizer training
+    collators/           # batch-level transforms (pretrain / sft / rl)
+    sources/             # CorpusSource impls (tiny_shakespeare, tiny_stories, fineweb_edu, hf_dataset)
   model/
     base.py              # LanguageModel + ModelOutput
     transformer/         # decoder-only transformer with RoPE, RMSNorm, SwiGLU, KV cache
@@ -149,6 +184,8 @@ minichatbot/
   inference/
     generator.py         # token-level sampling loop with KV cache
     text_generator.py    # text-in / text-out wrapper
+    benchmark.py         # per-phase prompt-set evaluation engine (used by CLI + callback)
+    cli.py               # shared CLI helpers (checkpoint resolution, sampling args)
     strategies/          # greedy, temperature, top_k, top_p
   rl/
     rewards/             # Reward implementations (REWARD_REGISTRY) — gsm8k, ...
@@ -156,29 +193,38 @@ minichatbot/
   training/
     trainer.py           # step-based loop with callback events
     rl_trainer.py        # GRPOTrainer — Trainer subclass with the sample/reward/PG step
-    runner.py            # build-and-train for pretrain + SFT
-    rl_runner.py         # build-and-train for the RL stage
+    runner.py            # build-and-train for pretrain / SFT / RL
+    builders.py          # shared build helpers (tokenizer, model, loaders, loss, callbacks)
+    cli.py               # shared training CLI args (--from-pretrained, --resume, ...)
     losses/              # cross-entropy (pretrain/sft), grpo (RL policy-gradient surrogate)
-    callbacks/           # logfile, console, jsonl, tensorboard, wandb, checkpoint, eval, sample
+    callbacks/           # logfile, console, jsonl, tensorboard, wandb, checkpoint, eval, sample, benchmark
     optim.py             # optimizer + LR scheduler builders
-  utils/                 # registry, atomic IO, eval-mode context manager
+  utils/                 # registry, atomic IO, eval-mode + compile-unwrap helpers, ...
 
 scripts/
-  setup.ps1 / setup.sh        # venv + torch + project install
-  data/download_corpus.py     # source registry   -> JSONL
-  data/train_tokenizer.py     # JSONL/text        -> tokenizer.json
-  data/prepare_data.py        # JSONL + tokenizer -> packed uint16 .bin
-  data/download_sft_data.py   # HF dataset        -> chat-format JSONL (SFT)
-  data/download_rl_data.py    # HF dataset        -> {question, answer} JSONL (RL)
-  train/pretrain.py           # YAML config       -> pretraining run
-  train/sft.py                # YAML config       -> SFT run (--from-pretrained)
-  train/rl.py                 # YAML config       -> GRPO run (--from-pretrained)
+  setup.ps1 / setup.sh             # venv + torch + project install
+  data/download_corpus.py          # source registry   -> JSONL (pretrain)
+  data/train_tokenizer.py          # JSONL/text        -> tokenizer.json
+  data/prepare_data.py             # JSONL + tokenizer -> packed uint16 .bin
+  data/download_sft_data.py        # HF dataset        -> chat-format JSONL (SFT)
+  data/download_rl_data.py         # HF dataset        -> {question, answer} JSONL (RL)
+  data/make_sft_smoketest_data.py  # tiny synthetic SFT dataset for pipeline checks
+  data/make_rl_smoketest_data.py   # tiny synthetic RL dataset for pipeline checks
+  train/pretrain.py                # YAML config       -> pretraining run
+  train/sft.py                     # YAML config       -> SFT run (--from-pretrained)
+  train/rl.py                      # YAML config       -> GRPO run (--from-pretrained)
+  inference/chat.py                # multi-turn REPL against a trained checkpoint
+  inference/generate.py            # one-shot completion against a trained checkpoint
+  inference/benchmark.py           # per-phase prompt-set evaluation (writes benchmark_<phase>_<ts>.txt)
+
+benchmarks/
+  prompts.yaml                     # per-phase prompt sets consumed by the benchmark CLI + callback
 
 configs/
-  debug_shakespeare.yaml # ~1M params, fp32, debugger-friendly
-  pretrain_small.yaml    # ~25M params, bf16, real small run
-  sft_fineweb.yaml       # SFT on top of the 110M fineweb pretrain
-  rl_gsm8k.yaml          # GRPO on GSM8K on top of the 110M fineweb SFT model
+  1.3M/                            # smoketests + debugger-friendly tiny runs (cpu_smoketest, debug_shakespeare, pretrain_shakespeare_char, sft_smoketest, rl_smoketest)
+  10M/                             # mid-tier shakespeare (pretrain + sft)
+  29M/                             # tinystories pretrain + sft, plus a generic pretrain_small
+  100M/                            # real fineweb pretrain / SFT / GRPO (~110M params, ~12h on RTX 4080)
 ```
 
 ## Development

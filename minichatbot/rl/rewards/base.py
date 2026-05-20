@@ -15,15 +15,8 @@ class Reward(ABC):
     sampled completion, i.e. `group_size` times per prompt per step).
 
     Concrete rewards register under a string key; configs select one via
-    `rl.reward`. Build by key with `Reward.from_key(...)`.
+    `rl.reward`. Look up by key with `REWARD_REGISTRY[key]()`.
     """
 
     @abstractmethod
     def __call__(self, completion: str, reference: str) -> float: ...
-
-    @classmethod
-    def from_key(cls, key: str) -> "Reward":
-        # Lazy import to avoid the rewards/__init__.py <-> base.py cycle.
-        from minichatbot.rl.rewards import REWARD_REGISTRY
-
-        return REWARD_REGISTRY[key]()

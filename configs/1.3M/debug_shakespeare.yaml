@@ -86,3 +86,5 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_pretrain.txt next to checkpoints
     params:
       phase: pretrain
+      # Default is 256, which overflows this config's 256-token context.
+      max_new_tokens: 128

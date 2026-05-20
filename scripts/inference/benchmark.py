@@ -55,6 +55,10 @@ from minichatbot.model.base import LanguageModel
 from minichatbot.tokenizer.bpe import IM_END_TOKEN, BPETokenizer
 from minichatbot.utils.torch_helpers import resolve_device
 
+# Resolved relative to the repo root so `--prompts-file` works from any CWD
+# (the script is reachable from `python scripts/...` or via PATH).
+_DEFAULT_PROMPTS_FILE = Path(__file__).resolve().parents[2] / "benchmarks" / "prompts.yaml"
+
 
 def _default_output_path(ckpt_path: Path, phase: str) -> Path:
     # ckpt_path is runs/<ts>_<name>/checkpoints/ckpt_*.pt; the run dir is
@@ -71,8 +75,8 @@ def main() -> None:
     parser.add_argument("--phase", choices=PHASES, required=True)
     parser.add_argument(
         "--prompts-file",
-        default="benchmarks/prompts.yaml",
-        help="YAML with per-phase prompt sets (default: benchmarks/prompts.yaml).",
+        default=str(_DEFAULT_PROMPTS_FILE),
+        help="YAML with per-phase prompt sets (default: <repo>/benchmarks/prompts.yaml).",
     )
     parser.add_argument(
         "--output",

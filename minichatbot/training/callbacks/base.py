@@ -46,6 +46,10 @@ class CallbackContext:
     tokenizer: Any | None = None
     trainer: Any | None = None
 
+    # Under `grad_accum_steps > 1`, the trainer pulls multiple micro-batches
+    # per optimizer step but only the LAST one is assigned here — callbacks
+    # that introspect `batch` (e.g. to count tokens) see one micro-batch, not
+    # the full step. Sum across the loop yourself if you need totals.
     batch: dict[str, torch.Tensor] | None = None
     loss: float | None = None
     grad_norm: float | None = None
@@ -54,6 +58,12 @@ class CallbackContext:
 
     eval_metrics: dict[str, float] | None = None
 
+    # Sticky scratch space for callbacks: never reset between events, so a
+    # callback can park state here for later events (e.g. CheckpointCallback
+    # writes `best_*` keys read by ConsoleCallback on later steps). The
+    # contract is "each writer overwrites its own keys each step it cares
+    # about" — a write-once-never-overwrite key will leak its stale value
+    # into every subsequent step's records.
     extra: dict[str, Any] = field(default_factory=dict)
 
 

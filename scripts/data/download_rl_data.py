@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections.abc import Callable
 from pathlib import Path
 
@@ -80,11 +81,16 @@ def main() -> None:
     for out_split, hf_split in split_map.items():
         ds = load_dataset(hf_name, hf_config, split=hf_split, cache_dir=args.cache_dir)
         path = out_dir / f"{out_split}.jsonl"
+        # Write to a sibling tmp file then atomically rename — a crash
+        # mid-write would otherwise leave a truncated `train.jsonl` that
+        # the dataset loader happily consumes (and for RL that file IS
+        # the training signal, so a silent truncation is expensive).
+        tmp_path = path.with_suffix(".jsonl.tmp")
         n_written = 0
         n_skipped = 0
-        with path.open("w", encoding="utf-8") as f:
-            for i, row in enumerate(tqdm(ds, desc=out_split, unit=" rows")):
-                if args.max_rows is not None and i >= args.max_rows:
+        with tmp_path.open("w", encoding="utf-8") as f:
+            for row in tqdm(ds, desc=out_split, unit=" rows"):
+                if args.max_rows is not None and n_written >= args.max_rows:
                     break
                 qa = to_qa(row)
                 if qa is None:
@@ -94,6 +100,7 @@ def main() -> None:
                 f.write(json.dumps({"question": question, "answer": answer}, ensure_ascii=False))
                 f.write("\n")
                 n_written += 1
+        os.replace(tmp_path, path)
         msg = f"wrote {n_written:>6,} rows to {path}"
         if n_skipped:
             msg += f"  (skipped {n_skipped} malformed)"

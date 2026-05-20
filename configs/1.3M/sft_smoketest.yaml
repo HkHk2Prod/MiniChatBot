@@ -87,3 +87,6 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_sft.txt next to checkpoints
     params:
       phase: sft
+      # Default is 256, which overflows this smoketest's 256-token
+      # context once the chat-rendered prompt is accounted for.
+      max_new_tokens: 128

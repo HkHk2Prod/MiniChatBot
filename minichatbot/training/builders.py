@@ -1,14 +1,14 @@
 """Builders shared by the training runners.
 
-Both `runner.py` (pretrain/SFT) and `rl_runner.py` (GRPO) go through the
-same sequence: turn `Config` + a few registry keys into a tokenizer,
-data loaders, a model, a loss, callbacks — then hand them to a trainer.
-That sequence lives here so each runner is just orchestration and only
-imports the registries it genuinely needs (the RL runner: none of them).
+`runner.py` (pretrain / SFT / RL) goes through the same sequence: turn
+`Config` + a few registry keys into a tokenizer, data loaders, a model,
+a loss, callbacks — then hand them to a trainer. That sequence lives
+here so the runner is just orchestration on top of these registries.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sized
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
@@ -16,9 +16,13 @@ from typing import Any, cast
 import torch
 from torch.utils.data import DataLoader, RandomSampler
 
-from minichatbot.config import Config, ModelConfig
+from minichatbot.config import Config, ModelConfig, RLConfig
 from minichatbot.data import DATASET_REGISTRY
 from minichatbot.data.collators import COLLATOR_REGISTRY
+from minichatbot.inference.strategies.base import SamplingStrategy
+from minichatbot.inference.strategies.temperature import TemperatureSampling
+from minichatbot.inference.strategies.top_k import TopKSampling
+from minichatbot.inference.strategies.top_p import TopPSampling
 from minichatbot.model import MODEL_REGISTRY, LanguageModel
 from minichatbot.tokenizer import TOKENIZER_REGISTRY, Tokenizer
 from minichatbot.training.callbacks import CALLBACK_REGISTRY, Callback
@@ -27,6 +31,12 @@ from minichatbot.utils.model_config_check import (
     parse_ckpt_model_config,
     reconcile_model_config,
 )
+
+# Above this dataset size, DataLoader(shuffle=True)'s default RandomSampler
+# materializes a torch.randperm(N).tolist() (~36 B per int) — OOMs on huge
+# corpora. Switch to replacement sampling past this point; collision
+# probability is negligible when samples_consumed << N (pretrain scale).
+HUGE_DATASET_THRESHOLD = 10_000_000
 
 
 def make_run_dir(cfg: Config) -> Path:
@@ -62,16 +72,15 @@ def build_loaders(
     pin = device.type == "cuda"
 
     train_ds = ds_cls.from_config(cfg.data, tokenizer, split="train")
-    # DataLoader(shuffle=True) uses RandomSampler(replacement=False), whose
-    # __iter__ does torch.randperm(N).tolist() — materializing a Python list
-    # of N ints (~36 bytes each). On FineWeb-scale packed corpora N ≈ 1.3B,
-    # which is ~46 GB and OOMs before step 1. Replacement-sampling generates
-    # indices in O(1)-memory chunks. We only switch for huge N (pretrain),
-    # where collision probability is negligible (samples-consumed << N);
-    # SFT-size corpora keep the standard without-replacement shuffle.
-    huge_dataset_threshold = 10_000_000
-    if len(train_ds) > huge_dataset_threshold:
-        train_sampler: RandomSampler | None = RandomSampler(
+    train_sampler: RandomSampler | None
+    if not isinstance(train_ds, Sized):
+        # Streaming/IterableDataset: DataLoader iterates the stream directly.
+        # Any shuffling must be implemented by the dataset (e.g. shuffle buffer)
+        # — DataLoader rejects both `sampler` and `shuffle=True` here.
+        train_sampler = None
+        shuffle = False
+    elif len(train_ds) > HUGE_DATASET_THRESHOLD:
+        train_sampler = RandomSampler(
             train_ds, replacement=True, num_samples=len(train_ds)
         )
         shuffle = False
@@ -103,7 +112,7 @@ def build_loaders(
     return train_loader, val_loader
 
 
-def preload_checkpoint(
+def prepare_model_state(
     cfg: Config,
     *,
     resume_ckpt: Path | None,
@@ -156,7 +165,7 @@ def build_model(
 
     if pretrained_ckpt is not None:
         print(f"loading {weights_label} weights from {pretrained_ckpt}")
-        assert incoming_state is not None  # guaranteed by preload_checkpoint
+        assert incoming_state is not None  # guaranteed by prepare_model_state
         model.load_state_dict(incoming_state["model"])
 
     if compile:
@@ -170,6 +179,17 @@ def build_model(
 
 def build_loss(loss_key: str, device: torch.device) -> Loss:
     return LOSS_REGISTRY[loss_key]().to(device)
+
+
+def build_sampling_strategy(rl: RLConfig) -> SamplingStrategy:
+    """Rollout sampler: top-k if set, else nucleus if top_p < 1, else plain
+    temperature sampling. Greedy (temperature=0) would make every completion
+    in a group identical → zero advantage everywhere, so don't do that."""
+    if rl.top_k is not None:
+        return TopKSampling(k=rl.top_k, temperature=rl.temperature)
+    if rl.top_p < 1.0:
+        return TopPSampling(p=rl.top_p, temperature=rl.temperature)
+    return TemperatureSampling(temperature=rl.temperature)
 
 
 def build_callbacks(cfg: Config) -> list[Callback]:
