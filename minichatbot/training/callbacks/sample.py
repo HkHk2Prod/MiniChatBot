@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import IO, Any
+from typing import IO
 
 import torch
 
+from minichatbot.inference.cli import build_strategy
 from minichatbot.inference.generator import Generator
 from minichatbot.inference.text_generator import TextGenerator
 from minichatbot.training.callbacks import CALLBACK_REGISTRY
 from minichatbot.training.callbacks.base import Callback, CallbackContext
 from minichatbot.utils.checkpoints import find_best_checkpoint
+from minichatbot.utils.torch_helpers import unwrap_compiled
 
 
 @CALLBACK_REGISTRY.register("sample")
@@ -25,7 +27,10 @@ class SampleGenerationCallback(Callback):
     (early samples become very short when EOS is the dominant token).
 
     Configure `strategy: top_k` (or `top_p`, `temperature`) and pass
-    strategy kwargs alongside (e.g., `k: 50`, `temperature: 0.8`).
+    the matching params alongside (e.g. `top_k: 50, temperature: 0.8`
+    or `top_p: 0.9, temperature: 0.8`). The same `build_strategy` used by
+    `scripts/inference/{chat,generate,benchmark}.py` powers strategy
+    construction, so the callback and the CLIs can't drift on defaults.
 
     Repetition control (matches `chat.py` semantics):
         frequency_penalty: subtract `f * count(token)` from each token's
@@ -48,11 +53,13 @@ class SampleGenerationCallback(Callback):
         prompts: list[str] | None = None,
         max_new_tokens: int = 64,
         strategy: str = "greedy",
+        temperature: float = 1.0,
+        top_k: int = 50,
+        top_p: float = 0.9,
         stop_on_eos: bool = True,
         chat_template: bool = False,
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
-        **strategy_kwargs: Any,
     ) -> None:
         if every < 1:
             raise ValueError(f"SampleGenerationCallback.every must be >= 1, got {every}")
@@ -60,19 +67,19 @@ class SampleGenerationCallback(Callback):
         self.prompts = prompts or []
         self.max_new_tokens = max_new_tokens
         self.strategy_name = strategy
+        self.temperature = temperature
+        self.top_k = top_k
+        self.top_p = top_p
         self.stop_on_eos = stop_on_eos
         self.chat_template = chat_template
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
-        self.strategy_kwargs = strategy_kwargs
         self._text_gen: TextGenerator | None = None
         self._fh: IO[str] | None = None
 
     def _build_text_generator(self, ctx: CallbackContext) -> TextGenerator:
-        from minichatbot.inference.strategies import SAMPLING_REGISTRY
         from minichatbot.tokenizer.bpe import IM_END_TOKEN
 
-        strat_cls = SAMPLING_REGISTRY[self.strategy_name]
         # Default: stop on <eos> so samples mirror what `chat.py` /
         # `generate.py` will produce. Set `stop_on_eos: false` to force
         # the full max_new_tokens — useful when you want to inspect the
@@ -86,8 +93,14 @@ class SampleGenerationCallback(Callback):
                 if self.chat_template
                 else ctx.tokenizer.eos_id
             )
+        strategy = build_strategy(
+            strategy=self.strategy_name,
+            temperature=self.temperature,
+            top_k=self.top_k,
+            top_p=self.top_p,
+        )
         gen = Generator(
-            strategy=strat_cls(**self.strategy_kwargs),
+            strategy=strategy,
             eos_id=eos_id,
             frequency_penalty=self.frequency_penalty,
             presence_penalty=self.presence_penalty,
@@ -130,9 +143,9 @@ class SampleGenerationCallback(Callback):
         the run's `config.yaml` to know what strategy/penalties produced
         the completions.
         """
-        kwargs = ", ".join(f"{k}={v}" for k, v in sorted(self.strategy_kwargs.items()))
         strategy_str = (
-            f"{self.strategy_name}({kwargs})" if kwargs else self.strategy_name
+            f"{self.strategy_name}(temp={self.temperature}, "
+            f"top_k={self.top_k}, top_p={self.top_p})"
         )
         return (
             "=== sampler config ===\n"
@@ -173,17 +186,28 @@ class SampleGenerationCallback(Callback):
             return
         device = next(ctx.model.parameters()).device
         state = torch.load(best_path, map_location=device, weights_only=False)
-        # Swap weights into the in-memory model. We're at on_train_end —
-        # nothing else uses ctx.model after this, so no need to restore.
-        ctx.model.load_state_dict(state["model"])
+        # `unwrap_compiled` matches the save side: checkpoints are saved
+        # without the `_orig_mod.` prefix `torch.compile` would add.
+        #
+        # Snapshot the in-memory weights and restore them after generating:
+        # `on_train_end` fires LIFO, and later callbacks (notably
+        # CheckpointCallback's final periodic save when max_steps doesn't
+        # land on its `every` boundary) would otherwise serialize the
+        # best weights under the last-step filename.
+        inner = unwrap_compiled(ctx.model)
+        saved_state = {k: v.detach().clone() for k, v in inner.state_dict().items()}
+        inner.load_state_dict(state["model"])
         best_step = state.get("step", "?")
 
-        self._fh.write(f"\n=== BEST MODEL (step {best_step}) ===\n")
-        completions = self._do_generate()
-        for prompt, completion in zip(self.prompts, completions, strict=True):
-            self._fh.write(f"PROMPT: {prompt}\n")
-            self._fh.write(f"COMPLETION: {completion}\n\n")
-        self._fh.flush()
+        try:
+            self._fh.write(f"\n=== BEST MODEL (step {best_step}) ===\n")
+            completions = self._do_generate()
+            for prompt, completion in zip(self.prompts, completions, strict=True):
+                self._fh.write(f"PROMPT: {prompt}\n")
+                self._fh.write(f"COMPLETION: {completion}\n\n")
+            self._fh.flush()
+        finally:
+            inner.load_state_dict(saved_state)
 
     def _generate(self, ctx: CallbackContext) -> None:
         assert self._text_gen is not None

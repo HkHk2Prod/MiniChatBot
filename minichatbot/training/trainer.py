@@ -1,7 +1,10 @@
 """Trainer for autoregressive language-model training.
 
 One trainer covers pretrain and SFT (just different Loss + Collator
-+ Dataset). RL (PPO) will subclass this when the time comes.
++ Dataset). The RL stage subclasses it — see
+`minichatbot.training.rl_trainer.GRPOTrainer`, which keeps this
+lifecycle but swaps the supervised forward/backward for
+sample -> reward -> policy-gradient.
 
 Lifecycle:
     on_train_start
@@ -24,7 +27,7 @@ from __future__ import annotations
 
 import dataclasses
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
@@ -39,6 +42,12 @@ from minichatbot.model.base import LanguageModel
 from minichatbot.training.callbacks.base import Callback, CallbackContext
 from minichatbot.training.losses.base import Loss
 from minichatbot.utils.io import atomic_torch_save
+from minichatbot.utils.torch_helpers import unwrap_compiled
+
+MicroFn = Callable[
+    [Iterator[Any]],
+    tuple[dict[str, torch.Tensor], dict[str, float]],
+]
 
 
 def _resolve_dtype(precision: str) -> torch.dtype:
@@ -113,7 +122,19 @@ class Trainer:
         self._startup_warnings: list[str] = list(startup_warnings or [])
 
     def fit(self) -> None:
-        ctx = self._make_ctx()
+        ctx = CallbackContext(
+            step=self.step,
+            epoch=0,
+            run_dir=self.run_dir,
+            config=self.full_config,
+            model=self.model,
+            optimizer=self.optimizer,
+            scheduler=self.scheduler,
+            val_loader=self.val_loader,
+            loss_fn=self.loss,
+            tokenizer=self.tokenizer,
+            trainer=self,
+        )
         self._fire("on_train_start", ctx)
         # Replay deferred startup warnings here, not at the call site that
         # built them — by now the LogFile callback's stdout tee is in
@@ -149,9 +170,14 @@ class Trainer:
         Format is a superset of LanguageModel.save() — the saved file can
         be loaded as a model via LanguageModel.load() or load_model().
         """
+        # Save through the uncompiled module so state_dict keys don't carry
+        # the `_orig_mod.` prefix that `torch.compile` adds — otherwise
+        # LanguageModel.load() (which builds a fresh, uncompiled model)
+        # rejects every key with a size mismatch.
+        inner = unwrap_compiled(self.model)
         state: dict[str, Any] = {
-            "model_config": dataclasses.asdict(self.model.cfg),
-            "model": self.model.state_dict(),
+            "model_config": dataclasses.asdict(inner.cfg),
+            "model": inner.state_dict(),
             "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(),
             "step": self.step,
@@ -184,7 +210,9 @@ class Trainer:
             state = preloaded_state
         else:
             state = torch.load(path, map_location=map_location, weights_only=False)
-        self.model.load_state_dict(state["model"])
+        # Load into the uncompiled inner module so the saved (unprefixed)
+        # keys match — symmetric with save_checkpoint.
+        unwrap_compiled(self.model).load_state_dict(state["model"])
         self.optimizer.load_state_dict(state["optimizer"])
         self.scheduler.load_state_dict(state["scheduler"])
         self.step = int(state.get("step", 0))
@@ -195,35 +223,89 @@ class Trainer:
         ctx: CallbackContext,
         train_iter: Iterator[dict[str, torch.Tensor]],
     ) -> None:
-        self.model.train()
-        self.optimizer.zero_grad(set_to_none=True)
-
-        accum = self.config.grad_accum_steps
         t0 = time.monotonic()
-        total_loss = 0.0
-        last_batch: dict[str, torch.Tensor] = {}
 
-        for _ in range(accum):
-            batch = next(train_iter)
+        def _micro(it: Iterator[Any]) -> tuple[dict[str, torch.Tensor], dict[str, float]]:
+            batch = next(it)
             batch = {
                 k: v.to(self.device, non_blocking=True) for k, v in batch.items()
             }
-            last_batch = batch
+            return batch, {}
+
+        batch = self._run_accum_step(ctx, train_iter, _micro)
+
+        step_dt = time.monotonic() - t0
+        seq_len = batch["input_ids"].size(1)
+        tokens = self.config.batch_size * self.config.grad_accum_steps * seq_len
+        ctx.tokens_per_sec = tokens / step_dt if step_dt > 0 else None
+
+    def _run_accum_step(
+        self,
+        ctx: CallbackContext,
+        train_iter: Iterator[Any],
+        micro_fn: MicroFn,
+    ) -> dict[str, torch.Tensor]:
+        """Run one optimizer step worth of grad-accum micro-batches.
+
+        `micro_fn(train_iter)` produces one micro-batch as `(batch, extras)`:
+          - `batch`: fed straight into `self.model(batch["input_ids"])` and
+            `self.loss(output, batch)`. The LAST batch is assigned to ctx.batch.
+          - `extras`: scalar metrics summed across accum then averaged onto
+            `ctx.extra` (e.g. RL's reward_mean / solve_rate / gen_len_mean).
+
+        Sets ctx.batch / ctx.loss / ctx.grad_norm / ctx.lr and ctx.extra[k] for
+        each `k` returned by micro_fn. Returns the last micro-batch so the
+        caller can compute tokens_per_sec — different semantics for supervised
+        (full-batch throughput) vs RL (completion-token throughput) — without
+        needing to copy the rest of the scaffolding.
+        """
+        self.model.train()
+        self.optimizer.zero_grad(set_to_none=True)
+        accum = self.config.grad_accum_steps
+        total_loss = 0.0
+        extras_sum: dict[str, float] = {}
+        batch: dict[str, torch.Tensor] = {}
+
+        for _ in range(accum):
+            batch, extras = micro_fn(train_iter)
             with self.autocast():
                 output = self.model(batch["input_ids"])
                 actual_loss = self.loss(output, batch)
                 scaled = actual_loss / accum
-            if self.scaler is not None:
-                self.scaler.scale(scaled).backward()
-            else:
-                scaled.backward()
+            self._backward(scaled)
             total_loss += float(actual_loss.item())
+            for k, v in extras.items():
+                extras_sum[k] = extras_sum.get(k, 0.0) + v
 
         self._fire("on_backward_end", ctx)
+        grad_norm = self._optimizer_step()
 
+        ctx.batch = batch
+        ctx.loss = total_loss / accum
+        ctx.grad_norm = grad_norm
+        ctx.lr = float(self.scheduler.get_last_lr()[0])
+        for k, v in extras_sum.items():
+            ctx.extra[k] = v / accum
+
+        return batch
+
+    def _backward(self, scaled_loss: torch.Tensor) -> None:
+        """Backward a (already grad-accum-scaled) loss, through the GradScaler
+        when fp16 is active. Shared by Trainer._train_step and subclasses
+        (e.g., GRPOTrainer) so the AMP plumbing lives in exactly one place."""
+        if self.scaler is not None:
+            self.scaler.scale(scaled_loss).backward()
+        else:
+            scaled_loss.backward()
+
+    def _optimizer_step(self) -> float | None:
+        """Unscale (fp16) -> grad-clip -> optimizer.step -> scheduler.step.
+
+        Returns the pre-clip grad norm if grad_clip is set, else None.
+        Call once per training step, after all grad-accum backwards.
+        """
         if self.scaler is not None:
             self.scaler.unscale_(self.optimizer)
-
         grad_norm: float | None = None
         if self.config.grad_clip is not None:
             grad_norm = float(
@@ -231,23 +313,21 @@ class Trainer:
                     self.model.parameters(), self.config.grad_clip
                 )
             )
-
+        # When fp16 grads are inf/nan, scaler.step() skips the optimizer
+        # update and scaler.update() reduces the scale. Advancing the
+        # scheduler regardless would silently desync the LR from the
+        # number of *effective* optimizer steps; detect a skip by watching
+        # the scale and only step the scheduler when the optimizer ran.
         if self.scaler is not None:
+            scale_before = self.scaler.get_scale()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+            if self.scaler.get_scale() >= scale_before:
+                self.scheduler.step()
         else:
             self.optimizer.step()
-        self.scheduler.step()
-
-        step_dt = time.monotonic() - t0
-        seq_len = last_batch["input_ids"].size(1)
-        tokens = self.config.batch_size * accum * seq_len
-
-        ctx.batch = last_batch
-        ctx.loss = total_loss / accum
-        ctx.grad_norm = grad_norm
-        ctx.lr = float(self.scheduler.get_last_lr()[0])
-        ctx.tokens_per_sec = tokens / step_dt if step_dt > 0 else None
+            self.scheduler.step()
+        return grad_norm
 
     def autocast(self):
         """Return the autocast context that wraps every train forward.
@@ -260,21 +340,6 @@ class Trainer:
         if not self.use_autocast:
             return nullcontext()
         return torch.autocast(device_type=self.device.type, dtype=self.dtype)
-
-    def _make_ctx(self) -> CallbackContext:
-        return CallbackContext(
-            step=self.step,
-            epoch=0,
-            run_dir=self.run_dir,
-            config=self.full_config,
-            model=self.model,
-            optimizer=self.optimizer,
-            scheduler=self.scheduler,
-            val_loader=self.val_loader,
-            loss_fn=self.loss,
-            tokenizer=self.tokenizer,
-            trainer=self,
-        )
 
     def _fire(self, event: str, ctx: CallbackContext) -> None:
         # Teardown events fire in reverse order (LIFO) so resources opened

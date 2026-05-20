@@ -52,6 +52,7 @@ def main() -> None:
 
     build_and_train(
         cfg,
+        stage="sft",
         dataset_key=args.dataset,
         collator_key=args.collator,
         loss_key=args.loss,

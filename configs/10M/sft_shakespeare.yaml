@@ -1,34 +1,36 @@
-# SFT smoketest — fine-tunes on synthetic Q&A data to exercise the full
-# SFT path (chat template, masked labels, collator, loss, samples).
-# Doesn't produce a useful model — purpose is "does the pipeline run?".
+# SFT on top of the 10M shakespeare pretrain.
+#
+# Same synthetic Q&A data as the smoketest — the point is to validate the
+# SFT path at non-trivial scale, not to teach the model anything useful.
+# The model: block here mirrors pretrain_shakespeare.yaml so the
+# pretrained checkpoint loads cleanly.
 #
 # Prereqs:
-#   1. A pretrained checkpoint to bootstrap from (run pretrain_shakespeare or
-#      pretrain_tinystories first, OR train from scratch by omitting
-#      --from-pretrained on the CLI).
-#   2. The shakespeare tokenizer (or any tokenizer with chat tokens). This
-#      config reuses data/shakespeare/tokenizer.json — train it via the
-#      shakespeare data-prep pipeline first.
+#   1. A pretrain_shakespeare run with a ckpt_best.pt (run pretrain_shakespeare
+#      first).
+#   2. The shakespeare tokenizer (already produced by the shakespeare data
+#      pipeline).
 #   3. The synthetic SFT data:
 #        python scripts/data/make_sft_smoketest_data.py
 #
 # Then launch:
-#   python scripts/train/sft.py --config configs/sft_smoketest.yaml --from-pretrained auto
+#   python scripts/train/sft.py --config configs/sft_shakespeare.yaml \
+#       --from-pretrained auto --pretrain-run-name pretrain_shakespeare
 
-run_name: sft_smoketest
+run_name: sft_shakespeare
 output_dir: runs
 seed: 42
 device: auto
 
 model:
   type: transformer
-  vocab_size: 2048
+  vocab_size: 2048             # match pretrain_shakespeare
   max_seq_len: 256
-  n_layers: 4
-  n_heads: 4
-  d_model: 128
-  d_ff: 384
-  dropout: 0.0
+  n_layers: 6
+  n_heads: 6
+  d_model: 384
+  d_ff: 1024
+  dropout: 0.1
   tie_embeddings: true
   norm_type: rmsnorm
 
@@ -40,12 +42,12 @@ data:
   type: sft
   train_path: data/sft_smoketest/train.jsonl
   val_path: data/sft_smoketest/val.jsonl
-  seq_len: 128                # Q&A pairs are short
+  seq_len: 128                 # Q&A pairs are short
   num_workers: 0
 
 optim:
-  lr: 1.0e-4                  # SFT typically uses smaller LR than pretrain
-  weight_decay: 0.0           # less needed when starting from a learned init
+  lr: 1.0e-4                   # smaller than pretrain — finetuning a learned init
+  weight_decay: 0.0
   betas: [0.9, 0.95]
   eps: 1.0e-8
   warmup_steps: 50
@@ -54,10 +56,10 @@ optim:
 
 trainer:
   max_steps: 500
-  batch_size: 8
+  batch_size: 16
   grad_accum_steps: 1
   grad_clip: 1.0
-  precision: fp32             # match the debug-friendly choice
+  precision: bf16              # match pretrain; fp32 fallback if bf16 unsupported
   compile: false
 
 callbacks:
@@ -72,8 +74,8 @@ callbacks:
   - type: sample
     params:
       every: 100
-      chat_template: true       # wrap prompts as user turn + assistant header
-      stop_on_eos: true         # stop at <|im_end|> (end of assistant turn)
+      chat_template: true
+      stop_on_eos: true
       prompts:
         - "What is 3 + 4?"
         - "Hello"
@@ -85,7 +87,7 @@ callbacks:
       # matches chat.py's flag defaults so mid-training samples preview
       # real generation.
       strategy: top_p
-      p: 0.9
+      top_p: 0.9
       temperature: 0.8
       frequency_penalty: 0.3
       presence_penalty: 0.3
@@ -93,3 +95,10 @@ callbacks:
     params:
       every: 250
       keep_last_k: 1
+
+  - type: benchmark              # end-of-training, write benchmark_sft.txt next to checkpoints
+    params:
+      phase: sft
+      # Default is 256, which overflows this config's 256-token context
+      # once the chat-rendered prompt is accounted for.
+      max_new_tokens: 128

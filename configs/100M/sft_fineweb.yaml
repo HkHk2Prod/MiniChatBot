@@ -93,7 +93,7 @@ callbacks:
       # matches chat.py's flag defaults so mid-training samples preview
       # real generation.
       strategy: top_p
-      p: 0.9
+      top_p: 0.9
       temperature: 0.8
       frequency_penalty: 0.3
       presence_penalty: 0.3
@@ -101,3 +101,7 @@ callbacks:
     params:
       every: 2000
       keep_last_k: 2
+
+  - type: benchmark              # end-of-training, write benchmark_sft.txt next to checkpoints
+    params:
+      phase: sft
