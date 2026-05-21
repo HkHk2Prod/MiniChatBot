@@ -568,6 +568,140 @@
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] [8] LM-eval: debug_shakespeare (wikitext ppl, capped — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "debug_shakespeare",
+        "--tasks", "wikitext",
+        "--num-fewshot", "0",
+        "--limit", "200"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[10M] [8] LM-eval: pretrain_shakespeare (wikitext + lambada — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "pretrain_shakespeare",
+        "--tasks", "wikitext,lambada_openai",
+        "--num-fewshot", "0"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] [8] LM-eval: pretrain_tinystories (lambada/piqa/wikitext — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "pretrain_tinystories",
+        "--tasks", "lambada_openai,piqa,wikitext",
+        "--num-fewshot", "0"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [8] LM-eval: pretrain_fineweb (lambada/piqa/arc/hellaswag/wikitext — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "pretrain_fineweb",
+        "--tasks", "lambada_openai,piqa,arc_easy,hellaswag,wikitext",
+        "--num-fewshot", "0"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] [5b] RL: rl_smoketest (GRPO from sft_smoketest)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/train/rl.py",
+        "--config", "configs/1.3M/rl_smoketest.yaml",
+        "--from-pretrained", "auto",
+        "--pretrain-run-name", "sft_smoketest"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] [8s] LM-eval: sft_smoketest (wikitext — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "sft_smoketest",
+        "--tasks", "wikitext",
+        "--num-fewshot", "0",
+        "--limit", "200"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] [8r] LM-eval: rl_smoketest (wikitext — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "rl_smoketest",
+        "--tasks", "wikitext",
+        "--num-fewshot", "0",
+        "--limit", "200"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[1.3M] [9] FULL PIPELINE: data → pretrain → SFT → RL → lm-eval (all stages)",
+      "detail": "End-to-end smallest-model run. Each training stage also auto-writes benchmark_<phase>.txt; the [8*] steps add standardized lm-eval (wikitext). Needs the .[eval] extra for the eval steps.",
+      "dependsOn": [
+        "[1.3M+10M] [1a] Data: download shakespeare",
+        "[1.3M+10M] [1b] Data: tokenizer shakespeare",
+        "[1.3M+10M] [1c] Data: prepare shakespeare",
+        "[1.3M+10M] [1d] Data: generate SFT smoketest dataset (synthetic Q&A)",
+        "[1.3M] [1f] Data: generate RL smoketest dataset (synthetic GSM8K-shaped)",
+        "[1.3M] [2] Pretrain: debug_shakespeare",
+        "[1.3M] [3] SFT: debug_shakespeare (synthetic smoketest data)",
+        "[1.3M] [5b] RL: rl_smoketest (GRPO from sft_smoketest)",
+        "[1.3M] [8] LM-eval: debug_shakespeare (wikitext ppl, capped — needs .[eval])",
+        "[1.3M] [8s] LM-eval: sft_smoketest (wikitext — needs .[eval])",
+        "[1.3M] [8r] LM-eval: rl_smoketest (wikitext — needs .[eval])"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
     }
   ],
   "inputs": [

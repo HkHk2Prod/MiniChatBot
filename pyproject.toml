@@ -36,6 +36,12 @@ data = [
     "datasets>=2.20",
     "huggingface_hub>=0.20",
 ]
+# Standardized benchmark suite (EleutherAI lm-evaluation-harness). Optional
+# and heavy — only needed for `scripts/inference/eval_harness.py`. Pulls in
+# `datasets`, which the `data` extra already provides.
+eval = [
+    "lm-eval>=0.4",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.4",
