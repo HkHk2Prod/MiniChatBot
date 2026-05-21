@@ -1,0 +1,98 @@
+# GRPO RL on top of the 10M shakespeare SFT model, using the synthetic
+# GSM8K-shaped smoketest data. At 10M params on a Shakespeare tokenizer the
+# model can't really do math — this exercises the RL loop end-to-end one step
+# up from the 1.3M smoketest, not produce a solver. Real GSM8K RL lives at
+# 100M (configs/100M/rl_gsm8k.yaml), where the tokenizer + scale support it.
+#
+# The model: block mirrors sft_shakespeare.yaml so the SFT checkpoint loads.
+#
+# Prereqs:
+#   1. An sft_shakespeare run with a ckpt_best.pt.
+#   2. The shakespeare tokenizer (has chat tokens).
+#   3. The synthetic RL data:
+#        python scripts/data/make_rl_smoketest_data.py
+#
+# Then launch:
+#   python scripts/train/rl.py --config configs/10M/rl_shakespeare.yaml \
+#       --from-pretrained auto --pretrain-run-name sft_shakespeare
+
+run_name: rl_shakespeare
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 2048             # match sft_shakespeare / pretrain_shakespeare
+  max_seq_len: 256
+  n_layers: 6
+  n_heads: 6
+  d_model: 384
+  d_ff: 1024
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/shakespeare/tokenizer.json
+
+data:
+  type: rl
+  train_path: data/rl_smoketest/train.jsonl
+  seq_len: 128
+  num_workers: 0
+  system_prompt: "Solve it and end with: #### <number>"
+
+rl:
+  group_size: 8
+  max_new_tokens: 48
+  temperature: 1.0             # must be > 0 — greedy collapses every group member to one string
+  top_p: 1.0
+  top_k: null
+  normalize_advantage_std: true
+  reward: gsm8k
+
+optim:
+  lr: 1.0e-5                   # small — RL on a learned policy
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 10
+  lr_schedule: constant
+  min_lr_ratio: 1.0
+
+trainer:
+  max_steps: 100
+  batch_size: 4                # 4 prompts x group 8 = 32 seqs/backward — fine at 10M
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 5
+  - type: jsonl
+  - type: sample
+    params:
+      every: 50
+      chat_template: true
+      stop_on_eos: true
+      prompts:
+        - "Tom has 7 apples and buys 5 more. How many apples does he have now?"
+      max_new_tokens: 48
+  - type: checkpoint
+    params:
+      every: 50
+      keep_last_k: 2
+
+  - type: benchmark              # end-of-training, write benchmark_rl.txt (with solve_rate)
+    params:
+      phase: rl
+      # GSM8K benchmark prompts tokenize to ~140 tokens under the 2048-vocab
+      # Shakespeare BPE; with max_seq_len 256, cap generation under the
+      # remaining budget to avoid overflow (same reason as rl_smoketest).
+      max_new_tokens: 96

@@ -702,6 +702,192 @@
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
+    },
+    {
+      "label": "[10M] [8s] LM-eval: sft_shakespeare (wikitext + lambada — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "sft_shakespeare",
+        "--tasks", "wikitext,lambada_openai",
+        "--num-fewshot", "0"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] [8s] LM-eval: sft_tinystories (lambada/piqa/wikitext — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "sft_tinystories",
+        "--tasks", "lambada_openai,piqa,wikitext",
+        "--num-fewshot", "0"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [8s] LM-eval: sft_fineweb (lambada/piqa/arc/hellaswag/wikitext — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "sft_fineweb",
+        "--tasks", "lambada_openai,piqa,arc_easy,hellaswag,wikitext",
+        "--num-fewshot", "0"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [8r] LM-eval: rl_gsm8k (MC suite + GSM8K solve, chat — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "rl_gsm8k",
+        "--tasks", "lambada_openai,piqa,arc_easy,hellaswag,wikitext,gsm8k",
+        "--num-fewshot", "0",
+        "--chat"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[10M] [5] RL: rl_shakespeare (GRPO from sft_shakespeare)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/train/rl.py",
+        "--config", "configs/10M/rl_shakespeare.yaml",
+        "--from-pretrained", "auto",
+        "--pretrain-run-name", "sft_shakespeare"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] [5] RL: rl_tinystories (GRPO from sft_tinystories)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/train/rl.py",
+        "--config", "configs/29M/rl_tinystories.yaml",
+        "--from-pretrained", "auto",
+        "--pretrain-run-name", "sft_tinystories"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[10M] [8r] LM-eval: rl_shakespeare (wikitext + lambada — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "rl_shakespeare",
+        "--tasks", "wikitext,lambada_openai",
+        "--num-fewshot", "0"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] [8r] LM-eval: rl_tinystories (lambada/piqa/wikitext — needs .[eval])",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": [
+        "scripts/inference/eval_harness.py",
+        "--run-name", "rl_tinystories",
+        "--tasks", "lambada_openai,piqa,wikitext",
+        "--num-fewshot", "0"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "[10M] [9] FULL PIPELINE: data → pretrain → SFT → RL → lm-eval (all stages)",
+      "detail": "End-to-end 10M shakespeare run, all three stages. Each training stage also auto-writes benchmark_<phase>.txt; the [8*] steps add lm-eval. Needs the .[eval] extra. Pretrain ~10min on RTX 4080; RL is a short GRPO run on synthetic GSM8K-shaped data.",
+      "dependsOn": [
+        "[1.3M+10M] [1a] Data: download shakespeare",
+        "[1.3M+10M] [1b] Data: tokenizer shakespeare",
+        "[1.3M+10M] [1c] Data: prepare shakespeare",
+        "[1.3M+10M] [1d] Data: generate SFT smoketest dataset (synthetic Q&A)",
+        "[1.3M] [1f] Data: generate RL smoketest dataset (synthetic GSM8K-shaped)",
+        "[10M] [2] Pretrain: shakespeare (~10min on RTX 4080)",
+        "[10M] [3] SFT: shakespeare (synthetic smoketest data)",
+        "[10M] [5] RL: rl_shakespeare (GRPO from sft_shakespeare)",
+        "[10M] [8] LM-eval: pretrain_shakespeare (wikitext + lambada — needs .[eval])",
+        "[10M] [8s] LM-eval: sft_shakespeare (wikitext + lambada — needs .[eval])",
+        "[10M] [8r] LM-eval: rl_shakespeare (wikitext + lambada — needs .[eval])"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "[29M] [9] FULL PIPELINE: data → pretrain → SFT → RL → lm-eval (all stages)",
+      "detail": "End-to-end 29M tinystories run, all three stages. Auto benchmark_<phase>.txt + [8*] lm-eval. Needs the .[eval] extra. Pretrain ~2-4h on RTX 4080; RL is a short GRPO run on synthetic GSM8K-shaped data.",
+      "dependsOn": [
+        "[29M] [1a] Data: download tinystories (100k cap)",
+        "[29M] [1b] Data: tokenizer tinystories",
+        "[29M] [1c] Data: prepare tinystories",
+        "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
+        "[1.3M] [1f] Data: generate RL smoketest dataset (synthetic GSM8K-shaped)",
+        "[29M] [2] Pretrain: tinystories (~2-4h on RTX 4080)",
+        "[29M] [3] SFT: tinystories (alpaca-cleaned, ~6K steps ≈ 2 epochs)",
+        "[29M] [5] RL: rl_tinystories (GRPO from sft_tinystories)",
+        "[29M] [8] LM-eval: pretrain_tinystories (lambada/piqa/wikitext — needs .[eval])",
+        "[29M] [8s] LM-eval: sft_tinystories (lambada/piqa/wikitext — needs .[eval])",
+        "[29M] [8r] LM-eval: rl_tinystories (lambada/piqa/wikitext — needs .[eval])"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [9] FULL PIPELINE: data → pretrain → SFT → RL → lm-eval (all stages)",
+      "detail": "End-to-end 110M fineweb run — LONG (~14h+ total: ~2h fineweb download + ~12h pretrain + ~2h SFT + RL). Auto benchmark_<phase>.txt + [8*] lm-eval. Needs the .[eval] extra. Don't launch casually.",
+      "dependsOn": [
+        "[100M] [1a] Data: download fineweb-edu (sample-10BT, 2M cap, ~2h)",
+        "[100M] [1b] Data: tokenizer fineweb (vocab 32K, ~10min)",
+        "[100M] [1c] Data: prepare fineweb",
+        "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
+        "[100M] [1g] Data: download GSM8K (RL prompts: 7.5K train + 1.3K test)",
+        "[100M] [2] Pretrain: fineweb-edu (~12h on RTX 4080)",
+        "[100M] [3] SFT: fineweb-edu (alpaca-cleaned, ~12K steps ≈ 2 epochs, ~1.5-2h)",
+        "[100M] [5] RL: rl_gsm8k (GRPO on GSM8K, from sft_fineweb)",
+        "[100M] [8] LM-eval: pretrain_fineweb (lambada/piqa/arc/hellaswag/wikitext — needs .[eval])",
+        "[100M] [8s] LM-eval: sft_fineweb (lambada/piqa/arc/hellaswag/wikitext — needs .[eval])",
+        "[100M] [8r] LM-eval: rl_gsm8k (MC suite + GSM8K solve, chat — needs .[eval])"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
     }
   ],
   "inputs": [
