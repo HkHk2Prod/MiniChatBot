@@ -32,6 +32,11 @@ dependencies = [
 [project.optional-dependencies]
 tensorboard = ["tensorboard>=2.15"]
 wandb = ["wandb>=0.16"]
+# Static train/val loss-curve PNG written at end-of-training by the
+# `lossplot` callback. Optional and light; the callback skips with an
+# install hint if matplotlib isn't present, so a run never fails for
+# lack of it. Install with: pip install -e ".[plot]"
+plot = ["matplotlib>=3.7"]
 data = [
     "datasets>=2.20",
     "huggingface_hub>=0.20",

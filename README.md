@@ -224,7 +224,7 @@ configs/
   1.3M/                            # smoketests + debugger-friendly tiny runs (cpu_smoketest, debug_shakespeare, pretrain_shakespeare_char, sft_smoketest, rl_smoketest)
   10M/                             # mid-tier shakespeare (pretrain + sft)
   29M/                             # tinystories pretrain + sft, plus a generic pretrain_small
-  100M/                            # real fineweb pretrain / SFT / GRPO (~110M params, ~12h on RTX 4080)
+  100M/                            # real fineweb pretrain / SFT / GRPO (~110M params, ~40h on RTX 4080)
 ```
 
 ## Development

@@ -88,3 +88,5 @@ callbacks:
       # merges), and max_seq_len is only 256 — so cap generation well
       # under the ~115-token remaining budget to avoid overflow.
       max_new_tokens: 96
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

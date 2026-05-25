@@ -96,3 +96,5 @@ callbacks:
       # Shakespeare BPE; with max_seq_len 256, cap generation under the
       # remaining budget to avoid overflow (same reason as rl_smoketest).
       max_new_tokens: 96
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

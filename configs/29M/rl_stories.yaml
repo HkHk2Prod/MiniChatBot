@@ -103,3 +103,5 @@ callbacks:
       # story so you can eyeball coherence vs. the variety number.
       prompts_file: benchmarks/prompts_stories.yaml
       max_new_tokens: 160
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

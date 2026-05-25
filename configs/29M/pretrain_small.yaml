@@ -71,3 +71,5 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_pretrain.txt next to checkpoints
     params:
       phase: pretrain
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

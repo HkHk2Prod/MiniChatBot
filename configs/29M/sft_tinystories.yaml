@@ -107,3 +107,5 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_sft.txt next to checkpoints
     params:
       phase: sft
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

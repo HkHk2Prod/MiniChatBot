@@ -63,7 +63,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] [1a] Data: download tinystories (100k cap)",
+      "label": "[29M] [1a] Data: download tinystories (full corpus, ~470M tokens)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
@@ -71,8 +71,7 @@
       "args": [
         "scripts/data/download_corpus.py",
         "--source", "tiny_stories",
-        "--output", "data/tinystories/corpus.jsonl",
-        "--max-docs", "100000"
+        "--output", "data/tinystories/corpus.jsonl"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
@@ -116,7 +115,7 @@
     {
       "label": "[29M] [1] Data: ALL tinystories (download → tokenizer → prepare → alpaca-cleaned)",
       "dependsOn": [
-        "[29M] [1a] Data: download tinystories (100k cap)",
+        "[29M] [1a] Data: download tinystories (full corpus, ~470M tokens)",
         "[29M] [1b] Data: tokenizer tinystories",
         "[29M] [1c] Data: prepare tinystories",
         "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)"
@@ -125,7 +124,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[100M] [1a] Data: download fineweb-edu (sample-10BT, 2M cap, ~2h)",
+      "label": "[100M] [1a] Data: download fineweb-edu (sample-10BT, 7M cap, ~6-7h)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
@@ -135,7 +134,7 @@
         "--source", "fineweb_edu",
         "--output", "data/fineweb/corpus.jsonl",
         "--subset", "sample-10BT",
-        "--max-docs", "2000000"
+        "--max-docs", "7000000"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "dedicated" },
@@ -179,7 +178,7 @@
     {
       "label": "[100M] [1] Data: ALL fineweb (download → tokenizer → prepare → alpaca-cleaned → GSM8K)",
       "dependsOn": [
-        "[100M] [1a] Data: download fineweb-edu (sample-10BT, 2M cap, ~2h)",
+        "[100M] [1a] Data: download fineweb-edu (sample-10BT, 7M cap, ~6-7h)",
         "[100M] [1b] Data: tokenizer fineweb (vocab 32K, ~10min)",
         "[100M] [1c] Data: prepare fineweb",
         "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
@@ -237,7 +236,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] [2] Pretrain: tinystories (~2-4h on RTX 4080)",
+      "label": "[29M] [2] Pretrain: tinystories (~11-23h on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
@@ -248,7 +247,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[100M] [2] Pretrain: fineweb-edu (~12h on RTX 4080)",
+      "label": "[100M] [2] Pretrain: fineweb-edu (~40h on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
@@ -864,14 +863,14 @@
     },
     {
       "label": "[29M] [9] FULL PIPELINE: data → pretrain → SFT → RL → lm-eval (all stages)",
-      "detail": "End-to-end 29M tinystories run, all three stages. Auto benchmark_<phase>.txt + [8*] lm-eval. Needs the .[eval] extra. Pretrain ~2-4h on RTX 4080; RL is a short GRPO run optimizing lexical variety on story prompts.",
+      "detail": "End-to-end 29M tinystories run, all three stages. Auto benchmark_<phase>.txt + [8*] lm-eval. Needs the .[eval] extra. Pretrain ~11-23h on RTX 4080 (2x Chinchilla, full corpus); RL is a short GRPO run optimizing lexical variety on story prompts.",
       "dependsOn": [
-        "[29M] [1a] Data: download tinystories (100k cap)",
+        "[29M] [1a] Data: download tinystories (full corpus, ~470M tokens)",
         "[29M] [1b] Data: tokenizer tinystories",
         "[29M] [1c] Data: prepare tinystories",
         "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
         "[29M] [1h] Data: generate story prompts (RL lexical-variety stage)",
-        "[29M] [2] Pretrain: tinystories (~2-4h on RTX 4080)",
+        "[29M] [2] Pretrain: tinystories (~11-23h on RTX 4080)",
         "[29M] [3] SFT: tinystories (alpaca-cleaned, ~6K steps ≈ 2 epochs)",
         "[29M] [5] RL: rl_stories (GRPO for lexical variety, from sft_tinystories)",
         "[29M] [8] LM-eval: pretrain_tinystories (lambada/piqa/wikitext — needs .[eval])",
@@ -883,14 +882,14 @@
     },
     {
       "label": "[100M] [9] FULL PIPELINE: data → pretrain → SFT → RL → lm-eval (all stages)",
-      "detail": "End-to-end 110M fineweb run — LONG (~14h+ total: ~2h fineweb download + ~12h pretrain + ~2h SFT + RL). Auto benchmark_<phase>.txt + [8*] lm-eval. Needs the .[eval] extra. Don't launch casually.",
+      "detail": "End-to-end 110M fineweb run — LONG (~50h+ total: ~6-7h fineweb download + ~40h pretrain (2x Chinchilla) + ~2h SFT + RL). Auto benchmark_<phase>.txt + [8*] lm-eval. Needs the .[eval] extra. Don't launch casually.",
       "dependsOn": [
-        "[100M] [1a] Data: download fineweb-edu (sample-10BT, 2M cap, ~2h)",
+        "[100M] [1a] Data: download fineweb-edu (sample-10BT, 7M cap, ~6-7h)",
         "[100M] [1b] Data: tokenizer fineweb (vocab 32K, ~10min)",
         "[100M] [1c] Data: prepare fineweb",
         "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
         "[100M] [1g] Data: download GSM8K (RL prompts: 7.5K train + 1.3K test)",
-        "[100M] [2] Pretrain: fineweb-edu (~12h on RTX 4080)",
+        "[100M] [2] Pretrain: fineweb-edu (~40h on RTX 4080)",
         "[100M] [3] SFT: fineweb-edu (alpaca-cleaned, ~12K steps ≈ 2 epochs, ~1.5-2h)",
         "[100M] [5] RL: rl_gsm8k (GRPO on GSM8K, from sft_fineweb)",
         "[100M] [8] LM-eval: pretrain_fineweb (lambada/piqa/arc/hellaswag/wikitext — needs .[eval])",

@@ -114,3 +114,5 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_rl.txt (with solve_rate) next to checkpoints
     params:
       phase: rl
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints
