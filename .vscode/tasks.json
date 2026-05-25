@@ -450,6 +450,17 @@
       "problemMatcher": []
     },
     {
+      "label": "[29M] [1h] Data: generate story prompts (RL lexical-variety stage)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "args": ["scripts/data/make_story_prompts.py"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
       "label": "[100M] [1g] Data: download GSM8K (RL prompts: 7.5K train + 1.3K test)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
@@ -785,14 +796,14 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] [5] RL: rl_tinystories (GRPO from sft_tinystories)",
+      "label": "[29M] [5] RL: rl_stories (GRPO for lexical variety, from sft_tinystories)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
       "args": [
         "scripts/train/rl.py",
-        "--config", "configs/29M/rl_tinystories.yaml",
+        "--config", "configs/29M/rl_stories.yaml",
         "--from-pretrained", "auto",
         "--pretrain-run-name", "sft_tinystories"
       ],
@@ -817,14 +828,14 @@
       "problemMatcher": []
     },
     {
-      "label": "[29M] [8r] LM-eval: rl_tinystories (lambada/piqa/wikitext — needs .[eval])",
+      "label": "[29M] [8r] LM-eval: rl_stories (lambada/piqa/wikitext — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
       "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "rl_tinystories",
+        "--run-name", "rl_stories",
         "--tasks", "lambada_openai,piqa,wikitext",
         "--num-fewshot", "0"
       ],
@@ -853,19 +864,19 @@
     },
     {
       "label": "[29M] [9] FULL PIPELINE: data → pretrain → SFT → RL → lm-eval (all stages)",
-      "detail": "End-to-end 29M tinystories run, all three stages. Auto benchmark_<phase>.txt + [8*] lm-eval. Needs the .[eval] extra. Pretrain ~2-4h on RTX 4080; RL is a short GRPO run on synthetic GSM8K-shaped data.",
+      "detail": "End-to-end 29M tinystories run, all three stages. Auto benchmark_<phase>.txt + [8*] lm-eval. Needs the .[eval] extra. Pretrain ~2-4h on RTX 4080; RL is a short GRPO run optimizing lexical variety on story prompts.",
       "dependsOn": [
         "[29M] [1a] Data: download tinystories (100k cap)",
         "[29M] [1b] Data: tokenizer tinystories",
         "[29M] [1c] Data: prepare tinystories",
         "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
-        "[1.3M] [1f] Data: generate RL smoketest dataset (synthetic GSM8K-shaped)",
+        "[29M] [1h] Data: generate story prompts (RL lexical-variety stage)",
         "[29M] [2] Pretrain: tinystories (~2-4h on RTX 4080)",
         "[29M] [3] SFT: tinystories (alpaca-cleaned, ~6K steps ≈ 2 epochs)",
-        "[29M] [5] RL: rl_tinystories (GRPO from sft_tinystories)",
+        "[29M] [5] RL: rl_stories (GRPO for lexical variety, from sft_tinystories)",
         "[29M] [8] LM-eval: pretrain_tinystories (lambada/piqa/wikitext — needs .[eval])",
         "[29M] [8s] LM-eval: sft_tinystories (lambada/piqa/wikitext — needs .[eval])",
-        "[29M] [8r] LM-eval: rl_tinystories (lambada/piqa/wikitext — needs .[eval])"
+        "[29M] [8r] LM-eval: rl_stories (lambada/piqa/wikitext — needs .[eval])"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
@@ -921,6 +932,7 @@
       "description": "RL config to resume",
       "options": [
         { "label": "[1.3M] rl_smoketest", "value": "configs/1.3M/rl_smoketest.yaml" },
+        { "label": "[29M]  rl_stories", "value": "configs/29M/rl_stories.yaml" },
         { "label": "[100M] rl_gsm8k", "value": "configs/100M/rl_gsm8k.yaml" }
       ],
       "default": "configs/100M/rl_gsm8k.yaml"

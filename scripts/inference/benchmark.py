@@ -52,6 +52,7 @@ from minichatbot.inference.cli import (
 )
 from minichatbot.inference.generator import Generator
 from minichatbot.model.base import LanguageModel
+from minichatbot.rl.rewards import REWARD_REGISTRY
 from minichatbot.tokenizer.bpe import IM_END_TOKEN, BPETokenizer
 from minichatbot.utils.torch_helpers import resolve_device
 
@@ -82,6 +83,13 @@ def main() -> None:
         "--output",
         default=None,
         help="Output .txt path. Default: runs/<run_dir>/benchmark_<phase>_<ts>.txt",
+    )
+    parser.add_argument(
+        "--reward",
+        default="gsm8k",
+        help="Reward key used to score the rl phase (must match the run's "
+        "rl.reward, e.g. 'gsm8k' or 'distinct_ngram'). Ignored for "
+        "pretrain/sft. Default: gsm8k.",
     )
     add_checkpoint_args(parser)
     # Defaults match chat.py — top_p sampling with mild penalties — so sft/rl
@@ -160,6 +168,7 @@ def main() -> None:
         f"frequency_penalty: {args.frequency_penalty}",
         f"presence_penalty:  {args.presence_penalty}",
     ]
+    reward = REWARD_REGISTRY[args.reward]() if args.phase == "rl" else None
     run_benchmark(
         model=model,
         tokenizer=tokenizer,
@@ -169,6 +178,7 @@ def main() -> None:
         phase_cfg=phase_cfg,
         output_path=output_path,
         max_new_tokens=args.max_new_tokens,
+        reward=reward,
         header_lines=header_lines,
         verbose=True,
     )

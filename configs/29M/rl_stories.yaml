@@ -1,0 +1,105 @@
+# GRPO RL on top of the 29M tinystories SFT model, optimizing lexical
+# variety (the `distinct_ngram` reward) on story-writing prompts.
+#
+# Why this instead of math: the 29M model is a TinyStories storyteller
+# SFT'd on alpaca, with an 8K-vocab tokenizer that mangles numbers — it
+# structurally cannot learn a GSM8K signal. Rewarding lexical variety is
+# in-domain and exactly verifiable: sample a group of stories per prompt,
+# reward the ones that don't collapse into "and ran and ran and ran", and
+# push the policy off the repetition loops a model this small falls into.
+# Real GSM8K RL lives at 100M (configs/100M/rl_gsm8k.yaml).
+#
+# The model: block mirrors sft_tinystories.yaml so the SFT checkpoint loads.
+#
+# Prereqs:
+#   1. An sft_tinystories run with a ckpt_best.pt.
+#   2. The tinystories tokenizer (has chat tokens).
+#   3. The story prompts:
+#        python scripts/data/make_story_prompts.py
+#
+# Then launch:
+#   python scripts/train/rl.py --config configs/29M/rl_stories.yaml \
+#       --from-pretrained auto --pretrain-run-name sft_tinystories
+
+run_name: rl_stories
+output_dir: runs
+seed: 42
+device: auto
+
+model:
+  type: transformer
+  vocab_size: 8000             # match sft_tinystories / pretrain_tinystories
+  max_seq_len: 512
+  n_layers: 6
+  n_heads: 8
+  d_model: 512
+  d_ff: 1408
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/tinystories/tokenizer.json
+
+data:
+  type: rl
+  train_path: data/story_prompts/train.jsonl
+  seq_len: 256                 # prompts are short instructions; plenty of room
+  num_workers: 0
+  system_prompt: "You are a friendly storyteller. Write a short, simple story."
+
+rl:
+  group_size: 8
+  max_new_tokens: 160          # stories need room — repetition only shows over length
+  temperature: 1.0             # must be > 0 — greedy collapses every group member to one string
+  top_p: 1.0
+  top_k: null
+  normalize_advantage_std: true
+  reward: distinct_ngram
+
+optim:
+  lr: 1.0e-5                   # small — RL on a learned policy
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 10
+  lr_schedule: constant
+  min_lr_ratio: 1.0
+
+trainer:
+  max_steps: 200
+  batch_size: 4                # 4 prompts x group 8 = 32 seqs/backward — fine at 29M
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 5                 # watch reward_mean — that's the real progress signal
+  - type: jsonl
+  - type: sample
+    params:
+      every: 50
+      chat_template: true
+      stop_on_eos: true
+      prompts:
+        - "Write a short story about a lost puppy."
+      max_new_tokens: 160
+  - type: checkpoint
+    params:
+      every: 100
+      keep_last_k: 2
+
+  - type: benchmark              # end-of-training, write benchmark_rl.txt next to checkpoints
+    params:
+      phase: rl
+      # Story prompts scored by this run's reward (distinct_ngram, picked up
+      # from cfg.rl.reward by the callback) — NOT the default GSM8K math set.
+      # The summary reports "mean variety" per group; the dump shows each
+      # story so you can eyeball coherence vs. the variety number.
+      prompts_file: benchmarks/prompts_stories.yaml
+      max_new_tokens: 160
