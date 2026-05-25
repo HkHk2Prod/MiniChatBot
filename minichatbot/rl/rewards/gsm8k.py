@@ -55,9 +55,15 @@ def extract_final_answer(text: str) -> str | None:
 class GSM8KReward(Reward):
     """1.0 if the completion's final number equals the reference's, else 0.0."""
 
+    # Binary correctness → the per-group mean is literally a solve rate.
+    metric_name = "solve_rate"
+
     def __call__(self, completion: str, reference: str) -> float:
         gold = extract_final_answer(reference)
         if gold is None:
             return 0.0
         pred = extract_final_answer(completion)
         return 1.0 if pred is not None and pred == gold else 0.0
+
+    def format_prediction(self, completion: str) -> str | None:
+        return extract_final_answer(completion)

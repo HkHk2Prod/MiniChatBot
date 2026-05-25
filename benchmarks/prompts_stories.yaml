@@ -1,0 +1,58 @@
+# Benchmark prompts for the 29M lexical-variety RL run (configs/29M/rl_stories.yaml).
+#
+# The default benchmarks/prompts.yaml `rl` entry is GSM8K math, scored by
+# exact-match on a number — meaningless for a variety objective. This file
+# carries story-writing prompts instead, scored by the run's reward
+# (`distinct_ngram`), which is reference-free: it reads only the model's own
+# completion, so every `reference` here is blank.
+#
+# Point the benchmark at this file with the callback's `prompts_file` param
+# (already wired in rl_stories.yaml) or `--prompts-file` on the CLI, and pass
+# the matching reward (`--reward distinct_ngram`) when running the CLI.
+
+rl:
+  description: >
+    Story-writing instructions in the TinyStories domain the 29M model was
+    trained on. `near` mirrors the training prompts (does variety improve on
+    familiar asks?); `generalize` is novel story prompts in the same format
+    (did the variety gain transfer, or only memorize?); `ood` is non-story
+    chat — a catastrophic-forgetting probe, unscored. Scored groups use the
+    reference-free `distinct_ngram` reward, so references are blank.
+  # No `system:` pinned: BenchmarkCallback falls back to the run's
+  # data.system_prompt, so the benchmark uses the exact storyteller prompt
+  # the policy was conditioned on during RL.
+  near:
+    prompts:
+      - prompt: "Write a short story about a lost puppy."
+        reference: ""
+      - prompt: "Tell me a little story about a brave little mouse."
+        reference: ""
+      - prompt: "Write a simple bedtime story about a magic tree."
+        reference: ""
+      - prompt: "Make up a short story about two best friends."
+        reference: ""
+      - prompt: "Write a few sentences telling a story about a friendly dragon."
+        reference: ""
+  generalize:
+    prompts:
+      # Novel subjects not in scripts/data/make_story_prompts.py — tests
+      # whether reduced repetition transfers beyond the training prompts.
+      - prompt: "Write a short story about a clock that runs backwards."
+        reference: ""
+      - prompt: "Tell me a little story about a lighthouse keeper and a whale."
+        reference: ""
+      - prompt: "Write a simple bedtime story about a cloud that wanted a name."
+        reference: ""
+      - prompt: "Make up a short story about a beetle who collected buttons."
+        reference: ""
+      - prompt: "Write a few sentences telling a story about a violin left on a train."
+        reference: ""
+  ood:
+    prompts:
+      # Non-story chat — the SFT base could handle these; comparing rl vs
+      # sft here probes whether variety-RL eroded general instruction
+      # following. Unscored.
+      - "What is the capital of France?"
+      - "Explain photosynthesis in one sentence."
+      - "List three colors."
+      - "What is 2 + 2?"

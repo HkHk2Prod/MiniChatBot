@@ -16,8 +16,13 @@ The benchmark YAML splits prompts into three groups per phase:
     ood        — outside the corpus entirely. Failures expected; useful
                  for catastrophic-forgetting probes (rl after SFT).
 
-For phase=rl, `near` and `generalize` carry numeric `reference` answers
-and are scored by `GSM8KReward`; `ood` is plain text and unscored.
+For phase=rl, `near` and `generalize` carry a `reference` each and are
+scored by the run's reward (passed in by the caller; defaults to
+`GSM8KReward`). Reference-free rewards — e.g. the lexical-variety
+`distinct_ngram` — ignore the reference, so it may be left blank. `ood`
+is plain text and unscored. The reward's `metric_name` /
+`format_prediction` hooks decide how the summary and per-item lines read,
+so the dump speaks the reward's language rather than assuming math.
 """
 
 from __future__ import annotations
@@ -32,7 +37,8 @@ from minichatbot.chat.template import render_prompt_for_completion
 from minichatbot.inference.generator import Generator
 from minichatbot.inference.text_generator import TextGenerator
 from minichatbot.model.base import LanguageModel
-from minichatbot.rl.rewards.gsm8k import GSM8KReward, extract_final_answer
+from minichatbot.rl.rewards.base import Reward
+from minichatbot.rl.rewards.gsm8k import GSM8KReward
 from minichatbot.tokenizer.base import Tokenizer
 
 
@@ -138,17 +144,32 @@ def _emit_plain(fh: IO[str], prompt: str, completion: str, *, verbose: bool) -> 
 
 
 def _emit_scored(
-    fh: IO[str], prompt: str, ref: str, completion: str, score: float, *, verbose: bool
+    fh: IO[str],
+    prompt: str,
+    ref: str,
+    completion: str,
+    score: float,
+    pred: str | None,
+    *,
+    verbose: bool,
 ) -> None:
-    pred = extract_final_answer(completion)
+    # REFERENCE / PRED are skipped when empty/absent — a reference-free
+    # reward (no gold to match, nothing to extract) shouldn't print blanks.
     fh.write(f"PROMPT:     {prompt}\n")
-    fh.write(f"REFERENCE:  {ref}\n")
-    fh.write(f"PRED:       {pred}\n")
-    fh.write(f"SCORE:      {score:.1f}\n")
+    if ref:
+        fh.write(f"REFERENCE:  {ref}\n")
+    if pred is not None:
+        fh.write(f"PRED:       {pred}\n")
+    fh.write(f"SCORE:      {score:.2f}\n")
     fh.write(f"COMPLETION: {completion}\n\n")
     if verbose:
+        bits = [f"SCORE: {score:.2f}"]
+        if ref:
+            bits.insert(0, f"REF: {ref}")
+        if pred is not None:
+            bits.insert(0, f"PRED: {pred}")
         print(f"PROMPT:     {prompt}")
-        print(f"PRED: {pred} | REF: {ref} | SCORE: {score:.1f}")
+        print(" | ".join(bits))
         print(f"COMPLETION: {completion}\n")
 
 
@@ -162,11 +183,16 @@ def run_benchmark(
     phase_cfg: dict[str, Any],
     output_path: Path,
     max_new_tokens: int,
+    reward: Reward | None = None,
     header_lines: list[str] | None = None,
     verbose: bool = True,
 ) -> dict[str, list[float]]:
     """Execute the benchmark for one phase, write to `output_path`, and
     return per-group score lists for the rl phase ({} otherwise).
+
+    `reward` scores the rl phase's `near`/`generalize` completions; it
+    defaults to `GSM8KReward` so existing math runs are unchanged. Pass
+    the run's actual reward to benchmark a different objective.
 
     `header_lines` is appended verbatim above the prompt sections so the
     caller can record what they want — checkpoint path + sampling config
@@ -184,7 +210,10 @@ def run_benchmark(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     text_gen = TextGenerator(model=model, tokenizer=tokenizer, generator=generator)
     system = phase_cfg.get("system")
-    reward = GSM8KReward() if phase == "rl" else None
+    # Default to GSM8K so callers that don't pass a reward keep the old
+    # math-benchmark behavior; only the rl phase scores anything.
+    if phase == "rl" and reward is None:
+        reward = GSM8KReward()
     rl_scores_by_group: dict[str, list[float]] = {}
 
     with output_path.open("w", encoding="utf-8") as fh:
@@ -235,8 +264,11 @@ def run_benchmark(
                         prompts_s, references, completions, strict=True
                     ):
                         score = float(reward(completion, ref))  # type: ignore[misc]
+                        pred = reward.format_prediction(completion)  # type: ignore[union-attr]
                         scores.append(score)
-                        _emit_scored(fh, prompt, ref, completion, score, verbose=verbose)
+                        _emit_scored(
+                            fh, prompt, ref, completion, score, pred, verbose=verbose
+                        )
                     rl_scores_by_group[group] = scores
                 else:
                     completions = _generate_chat(
@@ -248,6 +280,7 @@ def run_benchmark(
                         _emit_plain(fh, prompt, completion, verbose=verbose)
 
         if phase == "rl" and rl_scores_by_group:
+            metric = reward.metric_name  # type: ignore[union-attr]
             summary_lines = ["=== summary ==="]
             for group in GROUPS:
                 if group not in rl_scores_by_group:
@@ -255,7 +288,7 @@ def run_benchmark(
                 scores = rl_scores_by_group[group]
                 rate = sum(scores) / len(scores) if scores else 0.0
                 summary_lines.append(
-                    f"  {group:<11} solve_rate {rate:.2%}  ({int(sum(scores))}/{len(scores)})"
+                    f"  {group:<11} {metric} {rate:.2%}  (n={len(scores)})"
                 )
             summary = "\n".join(summary_lines) + "\n"
             fh.write(summary)

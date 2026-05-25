@@ -42,6 +42,7 @@ import torch
 from minichatbot.inference.benchmark import PHASES, load_phase_prompts, run_benchmark
 from minichatbot.inference.cli import build_strategy
 from minichatbot.inference.generator import Generator
+from minichatbot.rl.rewards import REWARD_REGISTRY
 from minichatbot.tokenizer.bpe import IM_END_TOKEN
 from minichatbot.training.callbacks import CALLBACK_REGISTRY
 from minichatbot.training.callbacks.base import Callback, CallbackContext
@@ -187,6 +188,14 @@ class BenchmarkCallback(Callback):
         # written next to checkpoints — anyone scanning the run dir gets
         # an obvious "what does this model do?" view. The CLI script
         # appends a timestamp for ad-hoc re-runs that shouldn't clobber.
+        # Score the rl benchmark with the reward the run actually trained
+        # on (cfg.rl.reward) so the summary measures the right objective —
+        # GSM8K solve_rate for a math run, variety for a variety run. Other
+        # phases don't score, so they need no reward.
+        reward = (
+            REWARD_REGISTRY[ctx.config.rl.reward]() if self.phase == "rl" else None
+        )
+
         output_path = Path(ctx.run_dir) / f"benchmark_{self.phase}.txt"
         print(f"[benchmark] writing {output_path}")
         ctx.model.eval()
@@ -200,6 +209,7 @@ class BenchmarkCallback(Callback):
                 phase_cfg=phase_cfg,
                 output_path=output_path,
                 max_new_tokens=self.max_new_tokens,
+                reward=reward,
                 header_lines=header_lines,
                 verbose=False,    # training stdout is already crowded
             )
