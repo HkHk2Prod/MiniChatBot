@@ -43,14 +43,20 @@ def _gold_index(target: Any, choices: list[str]) -> int | None:
         return None
 
 
-def _render(task: Any, docs: list[dict[str, Any]], delimiter: str) -> tuple[list[dict[str, Any]], int]:
+def _render(
+    task: Any, docs: list[dict[str, Any]], delimiter: str
+) -> tuple[list[dict[str, Any]], int]:
     rows: list[dict[str, Any]] = []
     skipped = 0
     for doc in docs:
         context = task.doc_to_text(doc)
         choices = task.doc_to_choice(doc)
         target = task.doc_to_target(doc)
-        if not isinstance(context, str) or not isinstance(choices, (list, tuple)) or len(choices) < 2:
+        if (
+            not isinstance(context, str)
+            or not isinstance(choices, (list, tuple))
+            or len(choices) < 2
+        ):
             skipped += 1
             continue
         choices = [str(c) for c in choices]
@@ -68,7 +74,9 @@ def _render(task: Any, docs: list[dict[str, Any]], delimiter: str) -> tuple[list
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__ and __doc__.splitlines()[0])
-    ap.add_argument("--task", required=True, help="lm-eval task name (e.g. arc_easy, piqa, hellaswag).")
+    ap.add_argument(
+        "--task", required=True, help="lm-eval task name (e.g. arc_easy, piqa, hellaswag)."
+    )
     ap.add_argument("--output-dir", required=True, help="Directory for {train,val}.jsonl.")
     ap.add_argument("--limit", type=int, default=None, help="Cap docs per split.")
     args = ap.parse_args()
