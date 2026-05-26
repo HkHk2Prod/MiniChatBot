@@ -124,29 +124,66 @@ def fmt(value: float | None) -> str:
     return f"{value:.4f}" if abs(value) < 1 else f"{value:.3f}"
 
 
+def _md_table(headers: list[str], aligns: list[str], rows: list[list[str]]) -> list[str]:
+    """Render a GitHub-flavored Markdown table with cells padded to column width.
+
+    Renderers ignore the extra padding, so the table looks identical once
+    rendered — but the raw file stays column-aligned when read as plain text.
+    ``aligns`` is per-column "l" (left) or "r" (right); the separator row gets
+    a trailing ``:`` for right-aligned columns.
+    """
+    widths = [
+        max(3, len(h), *(len(r[i]) for r in rows)) for i, h in enumerate(headers)
+    ]
+
+    def cell(text: str, w: int, align: str) -> str:
+        return text.rjust(w) if align == "r" else text.ljust(w)
+
+    def sep(w: int, align: str) -> str:
+        return "-" * (w - 1) + ":" if align == "r" else "-" * w
+
+    out = [
+        "| "
+        + " | ".join(cell(h, w, a) for h, w, a in zip(headers, widths, aligns, strict=True))
+        + " |"
+    ]
+    out.append("| " + " | ".join(sep(w, a) for w, a in zip(widths, aligns, strict=True)) + " |")
+    for row in rows:
+        cells = " | ".join(cell(c, w, a) for c, w, a in zip(row, widths, aligns, strict=True))
+        out.append(f"| {cells} |")
+    return out
+
+
 def render_markdown(runs: list[RunEvals], rows: list[tuple[str, str, bool]]) -> str:
     cols = [r.label for r in runs]
     lines = ["# lm-eval summary", ""]
     lines.append(f"_generated {datetime.now(timezone.utc).isoformat(timespec='seconds')}_")
     lines.append("")
     # per-run metadata
-    lines.append("| run | stage | num_fewshot | limit | params |")
-    lines.append("| --- | --- | ---: | ---: | ---: |")
+    meta_rows = []
     for r in runs:
         params = f"{r.n_params / 1e6:.1f}M" if r.n_params else "—"
-        nfs = r.num_fewshot if r.num_fewshot is not None else "—"
-        limit = r.limit if r.limit is not None else "full"
-        lines.append(f"| {r.label} | {r.stage or '—'} | {nfs} | {limit} | {params} |")
+        nfs = str(r.num_fewshot) if r.num_fewshot is not None else "—"
+        limit = str(r.limit) if r.limit is not None else "full"
+        meta_rows.append([r.label, r.stage or "—", nfs, limit, params])
+    lines += _md_table(
+        ["run", "stage", "num_fewshot", "limit", "params"],
+        ["l", "l", "r", "r", "r"],
+        meta_rows,
+    )
     lines.append("")
     lines.append("★ = target task for some stage. Columns are chronological.")
     lines.append("")
-    header = "| task | metric | " + " | ".join(cols) + " |"
-    sep = "| --- | --- | " + " | ".join("---:" for _ in cols) + " |"
-    lines += [header, sep]
-    for task, metric, is_target in rows:
-        name = f"★ {task}" if is_target else task
-        cells = [fmt(r.metrics.get(task, {}).get(metric)) for r in runs]
-        lines.append(f"| {name} | {metric} | " + " | ".join(cells) + " |")
+    body_rows = [
+        [f"★ {task}" if is_target else task, metric]
+        + [fmt(r.metrics.get(task, {}).get(metric)) for r in runs]
+        for task, metric, is_target in rows
+    ]
+    lines += _md_table(
+        ["task", "metric", *cols],
+        ["l", "l", *["r"] * len(cols)],
+        body_rows,
+    )
     return "\n".join(lines) + "\n"
 
 
