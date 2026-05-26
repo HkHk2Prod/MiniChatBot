@@ -1,0 +1,75 @@
+# DAPT-only branch for WikiText — continued next-token prediction on
+# WikiText-103 train, to lower WikiText test perplexity. No DPO stage:
+# WikiText is a perplexity benchmark with no candidate choices, so the only
+# lever is in-domain language modeling. Forks from the base pretrain ckpt.
+#
+#   python scripts/data/download_corpus.py --source wikitext --output data/wikitext/corpus.jsonl
+#   python scripts/data/prepare_data.py --corpus data/wikitext/corpus.jsonl --jsonl-key text \
+#       --tokenizer data/fineweb/tokenizer.json --output data/wikitext/ --val-frac 0.02
+#   python scripts/train/train.py --config configs/100M/dapt_wikitext.yaml \
+#       --from-pretrained auto --pretrain-run-name pretrain_fineweb
+
+run_name: dapt_wikitext
+output_dir: runs
+seed: 42
+device: auto
+stage: dapt
+
+model:
+  type: transformer
+  vocab_size: 32000
+  max_seq_len: 1024
+  n_layers: 12
+  n_heads: 12
+  d_model: 768
+  d_ff: 3072
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/fineweb/tokenizer.json
+
+data:
+  type: pretrain
+  train_path: data/wikitext/train.bin
+  val_path: data/wikitext/val.bin
+  seq_len: 1024
+  num_workers: 4
+
+optim:
+  lr: 5.0e-5
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 50
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 2000
+  batch_size: 16
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 50
+  - type: jsonl
+  - type: eval
+    params:
+      every: 250
+  - type: checkpoint
+    params:
+      every: 500
+      keep_last_k: 2
+  - type: lm_eval
+    params:
+      target_tasks: [wikitext]
+      other_tasks: [arc_easy, piqa, hellaswag, lambada_openai]
+      num_fewshot: 0

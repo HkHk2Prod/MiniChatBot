@@ -18,7 +18,7 @@
 #            --output-dir data/alpaca
 #
 # Then launch:
-#   python scripts/train/sft.py --config configs/sft_tinystories.yaml \
+#   python scripts/train/train.py --config configs/sft_tinystories.yaml \
 #       --from-pretrained auto --pretrain-run-name pretrain_tinystories
 
 run_name: sft_tinystories

@@ -75,7 +75,7 @@ class TrainerConfig:
 class RLConfig:
     """GRPO reinforcement-learning stage knobs.
 
-    Only consumed by `scripts/train/rl.py`; pretrain/SFT ignore it.
+    Only consumed by `scripts/train/train.py`; pretrain/SFT ignore it.
     `group_size` completions are sampled per prompt and scored by the
     reward function named in `reward` (see `minichatbot.rl.REWARD_REGISTRY`);
     advantages are computed by mean-centering each group (and dividing by
@@ -89,6 +89,21 @@ class RLConfig:
     top_k: int | None = None
     normalize_advantage_std: bool = True
     reward: str = "gsm8k"
+
+
+@dataclass
+class DPOConfig:
+    """DPO (multiple-choice preference) stage knobs.
+
+    Only consumed by the `dpo` stage. `beta` scales the reference-anchored
+    log-ratio reward; `score_norm` length-normalizes the per-candidate
+    log-prob so the optimized score matches the benchmark metric ('none'
+    for raw `acc`, 'char' for length-normalized `acc_norm`, 'token' to
+    divide by continuation token count).
+    """
+
+    beta: float = 0.1
+    score_norm: str = "none"
 
 
 @dataclass
@@ -109,7 +124,17 @@ class Config:
     optim: OptimConfig = field(default_factory=OptimConfig)
     trainer: TrainerConfig = field(default_factory=TrainerConfig)
     rl: RLConfig = field(default_factory=RLConfig)
+    dpo: DPOConfig = field(default_factory=DPOConfig)
     callbacks: list[CallbackSpec] = field(default_factory=list)
+    # Orchestration. `stage` picks the trainer and the default (dataset,
+    # collator, loss) registry keys via the runner's STAGE_DEFAULTS table;
+    # the three optional keys override individual entries when mixing
+    # components across stages (rarely needed). `stage` defaults to
+    # `data.type` at load time so pre-`stage` configs keep working.
+    stage: str | None = None
+    dataset: str | None = None
+    collator: str | None = None
+    loss: str | None = None
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> Config:
@@ -167,6 +192,9 @@ def load_config(path: str | Path) -> Config:
             f"Config root at {path} must be a YAML mapping, got {type(raw).__name__}"
         )
     cfg = _from_dict(Config, raw)
+    if cfg.stage is None:
+        # Back-compat: pre-`stage` configs encode the stage in `data.type`.
+        cfg.stage = cfg.data.type
     validate(cfg)
     return cfg
 
@@ -180,6 +208,7 @@ _VALID_PRECISION = {"fp32", "fp16", "bf16"}
 _VALID_NORM = {"rmsnorm", "layernorm"}
 _VALID_LR_SCHED = {"cosine", "linear", "constant"}
 _VALID_DEVICE = {"auto", "cuda", "cpu", "mps"}
+_VALID_DPO_NORM = {"none", "token", "char"}
 
 
 def validate(cfg: Config) -> None:
@@ -224,3 +253,9 @@ def validate(cfg: Config) -> None:
         )
     if not 0.0 < cfg.rl.top_p <= 1.0:
         raise ValueError(f"rl.top_p must be in (0, 1], got {cfg.rl.top_p}")
+    if cfg.dpo.beta <= 0.0:
+        raise ValueError(f"dpo.beta must be > 0, got {cfg.dpo.beta}")
+    if cfg.dpo.score_norm not in _VALID_DPO_NORM:
+        raise ValueError(
+            f"dpo.score_norm={cfg.dpo.score_norm!r}; expected one of {sorted(_VALID_DPO_NORM)}"
+        )

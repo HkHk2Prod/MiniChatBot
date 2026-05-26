@@ -13,7 +13,7 @@
 #        python scripts/data/make_sft_smoketest_data.py
 #
 # Then launch:
-#   python scripts/train/sft.py --config configs/sft_smoketest.yaml --from-pretrained auto
+#   python scripts/train/train.py --config configs/sft_smoketest.yaml --from-pretrained auto
 
 run_name: sft_smoketest
 output_dir: runs

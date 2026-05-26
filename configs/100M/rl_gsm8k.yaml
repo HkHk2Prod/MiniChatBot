@@ -24,7 +24,7 @@
 #        python scripts/data/download_rl_data.py --source gsm8k --output-dir data/gsm8k
 #
 # Then launch:
-#   python scripts/train/rl.py --config configs/rl_gsm8k.yaml \
+#   python scripts/train/train.py --config configs/rl_gsm8k.yaml \
 #       --from-pretrained auto --pretrain-run-name sft_fineweb
 
 run_name: rl_gsm8k

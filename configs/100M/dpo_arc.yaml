@@ -1,0 +1,79 @@
+# DPO on ARC-Easy — the "test training" stage of the ARC specialist branch.
+# N-way reference-anchored preference loss on the ARC-Easy *train* split
+# (held-out test stays for eval). Forks from the base pretrain checkpoint
+# (or from a dapt_arc run, once you have a science corpus to DAPT on).
+#
+#   python scripts/data/make_mc_data.py --task arc_easy --output-dir data/arc_easy
+#   python scripts/train/train.py --config configs/100M/dpo_arc.yaml \
+#       --from-pretrained auto --pretrain-run-name pretrain_fineweb
+#
+# The lm_eval callback writes lm_eval_target.json (arc_easy — should rise)
+# and lm_eval_other.json (the collateral suite — watch it fall) into the run
+# dir at end of training. Needs the .[eval] extra.
+
+run_name: dpo_arc
+output_dir: runs
+seed: 42
+device: auto
+stage: dpo
+
+model:
+  type: transformer
+  vocab_size: 32000
+  max_seq_len: 1024
+  n_layers: 12
+  n_heads: 12
+  d_model: 768
+  d_ff: 3072
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/fineweb/tokenizer.json
+
+data:
+  type: mc
+  train_path: data/arc_easy/train.jsonl
+  val_path: data/arc_easy/val.jsonl
+  seq_len: 1024
+  num_workers: 4
+
+dpo:
+  beta: 0.1
+  score_norm: none        # ARC-Easy headline is raw acc -> no length norm
+
+optim:
+  lr: 5.0e-6              # DPO drifts the policy gently from the reference
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 20
+  lr_schedule: constant
+  min_lr_ratio: 1.0
+
+trainer:
+  max_steps: 600          # ~4 epochs over 2.25K ARC-Easy train examples @ bs 16
+  batch_size: 16
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 20
+  - type: jsonl
+  - type: checkpoint
+    params:
+      every: 200
+      keep_last_k: 2
+  - type: lm_eval
+    params:
+      target_tasks: [arc_easy]
+      other_tasks: [piqa, arc_challenge, hellaswag, lambada_openai, wikitext]
+      num_fewshot: 0
+      # limit: 500          # uncomment for a faster end-of-run eval pass

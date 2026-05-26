@@ -26,7 +26,7 @@
 #       --output data/shakespeare/char/ --val-frac 0.05
 #
 # Then launch:
-#   python scripts/train/pretrain.py --config configs/pretrain_shakespeare_char.yaml
+#   python scripts/train/train.py --config configs/pretrain_shakespeare_char.yaml
 
 run_name: pretrain_shakespeare_char
 output_dir: runs

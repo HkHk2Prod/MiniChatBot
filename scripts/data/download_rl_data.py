@@ -115,7 +115,7 @@ def main() -> None:
     print(
         f"\nNext step: point your RL config's data.train_path at\n"
         f"  {out_dir / 'train.jsonl'}\n"
-        f"then run scripts/train/rl.py --config configs/100M/rl_gsm8k.yaml --from-pretrained auto"
+        f"then run scripts/train/train.py --config configs/100M/rl_gsm8k.yaml --from-pretrained auto"
     )
 
 

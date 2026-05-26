@@ -37,7 +37,7 @@
 #       --output data/fineweb/ --val-frac 0.005
 #
 # Then launch:
-#   python scripts/train/pretrain.py --config configs/pretrain_fineweb.yaml
+#   python scripts/train/train.py --config configs/pretrain_fineweb.yaml
 
 run_name: pretrain_fineweb
 output_dir: runs

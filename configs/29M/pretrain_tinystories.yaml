@@ -31,7 +31,7 @@
 #       --tokenizer data/tinystories/tokenizer.json --output data/tinystories/ --val-frac 0.01
 #
 # Then launch:
-#   python scripts/train/pretrain.py --config configs/pretrain_tinystories.yaml
+#   python scripts/train/train.py --config configs/pretrain_tinystories.yaml
 
 run_name: pretrain_tinystories
 output_dir: runs

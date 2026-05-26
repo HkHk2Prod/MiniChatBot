@@ -13,7 +13,7 @@
 #        python scripts/data/make_rl_smoketest_data.py
 #
 # Then launch:
-#   python scripts/train/rl.py --config configs/10M/rl_shakespeare.yaml \
+#   python scripts/train/train.py --config configs/10M/rl_shakespeare.yaml \
 #       --from-pretrained auto --pretrain-run-name sft_shakespeare
 
 run_name: rl_shakespeare

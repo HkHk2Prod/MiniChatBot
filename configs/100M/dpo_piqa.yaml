@@ -1,0 +1,72 @@
+# DPO on PIQA — physical-commonsense specialist branch (2-choice).
+# score_norm: none → optimizes raw acc (PIQA's headline metric).
+#
+#   python scripts/data/make_mc_data.py --task piqa --output-dir data/piqa
+#   python scripts/train/train.py --config configs/100M/dpo_piqa.yaml \
+#       --from-pretrained auto --pretrain-run-name pretrain_fineweb
+
+run_name: dpo_piqa
+output_dir: runs
+seed: 42
+device: auto
+stage: dpo
+
+model:
+  type: transformer
+  vocab_size: 32000
+  max_seq_len: 1024
+  n_layers: 12
+  n_heads: 12
+  d_model: 768
+  d_ff: 3072
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/fineweb/tokenizer.json
+
+data:
+  type: mc
+  train_path: data/piqa/train.jsonl
+  val_path: data/piqa/val.jsonl
+  seq_len: 1024
+  num_workers: 4
+
+dpo:
+  beta: 0.1
+  score_norm: none        # PIQA headline is raw acc
+
+optim:
+  lr: 5.0e-6
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 30
+  lr_schedule: constant
+  min_lr_ratio: 1.0
+
+trainer:
+  max_steps: 1000         # ~1 epoch over 16K PIQA train examples @ bs 16
+  batch_size: 16
+  grad_accum_steps: 1
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 25
+  - type: jsonl
+  - type: checkpoint
+    params:
+      every: 300
+      keep_last_k: 2
+  - type: lm_eval
+    params:
+      target_tasks: [piqa]
+      other_tasks: [arc_easy, arc_challenge, hellaswag, lambada_openai, wikitext]
+      num_fewshot: 0

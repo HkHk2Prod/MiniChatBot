@@ -5,50 +5,88 @@
       "label": "[1.3M+10M] [1a] Data: download shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/download_corpus.py",
-        "--source", "tiny_shakespeare",
-        "--output", "data/shakespeare/corpus.jsonl"
+        "--source",
+        "tiny_shakespeare",
+        "--output",
+        "data/shakespeare/corpus.jsonl"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M+10M] [1b] Data: tokenizer shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/train_tokenizer.py",
-        "--corpus", "data/shakespeare/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--output", "data/shakespeare/tokenizer.json",
-        "--vocab-size", "2048"
+        "--corpus",
+        "data/shakespeare/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--output",
+        "data/shakespeare/tokenizer.json",
+        "--vocab-size",
+        "2048"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M+10M] [1c] Data: prepare shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/prepare_data.py",
-        "--corpus", "data/shakespeare/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--tokenizer", "data/shakespeare/tokenizer.json",
-        "--output", "data/shakespeare/",
-        "--val-frac", "0.05"
+        "--corpus",
+        "data/shakespeare/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--tokenizer",
+        "data/shakespeare/tokenizer.json",
+        "--output",
+        "data/shakespeare/",
+        "--val-frac",
+        "0.05"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
@@ -66,50 +104,88 @@
       "label": "[29M] [1a] Data: download tinystories (full corpus, ~470M tokens)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/download_corpus.py",
-        "--source", "tiny_stories",
-        "--output", "data/tinystories/corpus.jsonl"
+        "--source",
+        "tiny_stories",
+        "--output",
+        "data/tinystories/corpus.jsonl"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [1b] Data: tokenizer tinystories",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/train_tokenizer.py",
-        "--corpus", "data/tinystories/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--output", "data/tinystories/tokenizer.json",
-        "--vocab-size", "8000"
+        "--corpus",
+        "data/tinystories/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--output",
+        "data/tinystories/tokenizer.json",
+        "--vocab-size",
+        "8000"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [1c] Data: prepare tinystories",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/prepare_data.py",
-        "--corpus", "data/tinystories/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--tokenizer", "data/tinystories/tokenizer.json",
-        "--output", "data/tinystories/",
-        "--val-frac", "0.01"
+        "--corpus",
+        "data/tinystories/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--tokenizer",
+        "data/tinystories/tokenizer.json",
+        "--output",
+        "data/tinystories/",
+        "--val-frac",
+        "0.01"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
@@ -127,52 +203,92 @@
       "label": "[100M] [1a] Data: download fineweb-edu (sample-10BT, 7M cap, ~6-7h)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/download_corpus.py",
-        "--source", "fineweb_edu",
-        "--output", "data/fineweb/corpus.jsonl",
-        "--subset", "sample-10BT",
-        "--max-docs", "7000000"
+        "--source",
+        "fineweb_edu",
+        "--output",
+        "data/fineweb/corpus.jsonl",
+        "--subset",
+        "sample-10BT",
+        "--max-docs",
+        "7000000"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [1b] Data: tokenizer fineweb (vocab 32K, ~10min)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/train_tokenizer.py",
-        "--corpus", "data/fineweb/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--output", "data/fineweb/tokenizer.json",
-        "--vocab-size", "32000"
+        "--corpus",
+        "data/fineweb/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--output",
+        "data/fineweb/tokenizer.json",
+        "--vocab-size",
+        "32000"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [1c] Data: prepare fineweb",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/prepare_data.py",
-        "--corpus", "data/fineweb/corpus.jsonl",
-        "--jsonl-key", "text",
-        "--tokenizer", "data/fineweb/tokenizer.json",
-        "--output", "data/fineweb/",
-        "--val-frac", "0.005"
+        "--corpus",
+        "data/fineweb/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--tokenizer",
+        "data/fineweb/tokenizer.json",
+        "--output",
+        "data/fineweb/",
+        "--val-frac",
+        "0.005"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
@@ -191,507 +307,843 @@
       "label": "[1.3M+10M] [1d] Data: generate SFT smoketest dataset (synthetic Q&A)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/data/make_sft_smoketest_data.py"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/make_sft_smoketest_data.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M+100M] [1e] Data: download alpaca-cleaned (real SFT data, ~52K examples)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/download_sft_data.py",
-        "--source", "alpaca_cleaned",
-        "--output-dir", "data/alpaca"
+        "--source",
+        "alpaca_cleaned",
+        "--output-dir",
+        "data/alpaca"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [2] Pretrain: debug_shakespeare",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/pretrain.py", "--config", "configs/1.3M/debug_shakespeare.yaml"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/1.3M/debug_shakespeare.yaml"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[10M] [2] Pretrain: shakespeare (~10min on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/pretrain.py", "--config", "configs/10M/pretrain_shakespeare.yaml"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/10M/pretrain_shakespeare.yaml"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [2] Pretrain: tinystories (~11-23h on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/pretrain.py", "--config", "configs/29M/pretrain_tinystories.yaml"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/29M/pretrain_tinystories.yaml"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [2] Pretrain: fineweb-edu (~40h on RTX 4080)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/pretrain.py", "--config", "configs/100M/pretrain_fineweb.yaml"],
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/pretrain_fineweb.yaml"
+      ],
       "options": {
         "cwd": "${workspaceFolder}",
-        "env": { "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True" }
+        "env": {
+          "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+        }
       },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [3] SFT: debug_shakespeare (synthetic smoketest data)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
-        "scripts/train/sft.py",
-        "--config", "configs/1.3M/sft_smoketest.yaml",
-        "--from-pretrained", "auto",
-        "--pretrain-run-name", "debug_shakespeare"
+        "scripts/train/train.py",
+        "--config",
+        "configs/1.3M/sft_smoketest.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "debug_shakespeare"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[10M] [3] SFT: shakespeare (synthetic smoketest data)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
-        "scripts/train/sft.py",
-        "--config", "configs/10M/sft_shakespeare.yaml",
-        "--from-pretrained", "auto",
-        "--pretrain-run-name", "pretrain_shakespeare"
+        "scripts/train/train.py",
+        "--config",
+        "configs/10M/sft_shakespeare.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "pretrain_shakespeare"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [3] SFT: tinystories (alpaca-cleaned, ~6K steps ≈ 2 epochs)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
-        "scripts/train/sft.py",
-        "--config", "configs/29M/sft_tinystories.yaml",
-        "--from-pretrained", "auto",
-        "--pretrain-run-name", "pretrain_tinystories"
+        "scripts/train/train.py",
+        "--config",
+        "configs/29M/sft_tinystories.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "pretrain_tinystories"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [3] SFT: fineweb-edu (alpaca-cleaned, ~12K steps ≈ 2 epochs, ~1.5-2h)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
-        "scripts/train/sft.py",
-        "--config", "configs/100M/sft_fineweb.yaml",
-        "--from-pretrained", "auto",
-        "--pretrain-run-name", "pretrain_fineweb"
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/sft_fineweb.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "pretrain_fineweb"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [4] Chat: latest sft_smoketest run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/chat.py",
-        "--run-name", "sft_smoketest",
-        "--max-new-tokens", "64",
-        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "1.0",
-        "--frequency-penalty", "0.7", "--presence-penalty", "0.7"
+        "--run-name",
+        "sft_smoketest",
+        "--max-new-tokens",
+        "64",
+        "--strategy",
+        "top_p",
+        "--top-p",
+        "0.9",
+        "--temperature",
+        "1.0",
+        "--frequency-penalty",
+        "0.7",
+        "--presence-penalty",
+        "0.7"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[10M] [4] Chat: latest sft_shakespeare run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/chat.py",
-        "--run-name", "sft_shakespeare",
-        "--max-new-tokens", "128",
-        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "0.9",
-        "--frequency-penalty", "0.6", "--presence-penalty", "0.6"
+        "--run-name",
+        "sft_shakespeare",
+        "--max-new-tokens",
+        "128",
+        "--strategy",
+        "top_p",
+        "--top-p",
+        "0.9",
+        "--temperature",
+        "0.9",
+        "--frequency-penalty",
+        "0.6",
+        "--presence-penalty",
+        "0.6"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [4] Chat: latest sft_tinystories run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/chat.py",
-        "--run-name", "sft_tinystories",
-        "--max-new-tokens", "200",
-        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "0.8",
-        "--frequency-penalty", "0.5", "--presence-penalty", "0.5"
+        "--run-name",
+        "sft_tinystories",
+        "--max-new-tokens",
+        "200",
+        "--strategy",
+        "top_p",
+        "--top-p",
+        "0.9",
+        "--temperature",
+        "0.8",
+        "--frequency-penalty",
+        "0.5",
+        "--presence-penalty",
+        "0.5"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [4] Chat: latest sft_fineweb run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/chat.py",
-        "--run-name", "sft_fineweb",
-        "--max-new-tokens", "256",
-        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "0.8",
-        "--frequency-penalty", "0.4", "--presence-penalty", "0.4"
+        "--run-name",
+        "sft_fineweb",
+        "--max-new-tokens",
+        "256",
+        "--strategy",
+        "top_p",
+        "--top-p",
+        "0.9",
+        "--temperature",
+        "0.8",
+        "--frequency-penalty",
+        "0.4",
+        "--presence-penalty",
+        "0.4"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
-      "problemMatcher": []
-    },
-    {
-      "label": "[*] [2r] Pretrain: resume run (pick config + checkpoint)",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": [
-        "scripts/train/pretrain.py",
-        "--config", "${input:pretrainConfig}",
-        "--resume", "${input:resumeTarget}"
-      ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
-      "problemMatcher": []
-    },
-    {
-      "label": "[*] [3r] SFT: resume run (pick config + checkpoint)",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": [
-        "scripts/train/sft.py",
-        "--config", "${input:sftConfig}",
-        "--resume", "${input:resumeTarget}"
-      ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
-      "problemMatcher": []
-    },
-    {
-      "label": "[*] [2c] Pretrain: continue from latest finished run (fresh optim, pick config)",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": [
-        "scripts/train/pretrain.py",
-        "--config", "${input:pretrainConfig}",
-        "--from-pretrained", "auto"
-      ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [1f] Data: generate RL smoketest dataset (synthetic GSM8K-shaped)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/data/make_rl_smoketest_data.py"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/make_rl_smoketest_data.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [1h] Data: generate story prompts (RL lexical-variety stage)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/data/make_story_prompts.py"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/make_story_prompts.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [1g] Data: download GSM8K (RL prompts: 7.5K train + 1.3K test)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/data/download_rl_data.py",
-        "--source", "gsm8k",
-        "--output-dir", "data/gsm8k"
+        "--source",
+        "gsm8k",
+        "--output-dir",
+        "data/gsm8k"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [5] RL: rl_smoketest (GRPO smoketest, from scratch)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": ["scripts/train/rl.py", "--config", "configs/1.3M/rl_smoketest.yaml"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/1.3M/rl_smoketest.yaml"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [5] RL: rl_gsm8k (GRPO on GSM8K, from sft_fineweb)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
-        "scripts/train/rl.py",
-        "--config", "configs/100M/rl_gsm8k.yaml",
-        "--from-pretrained", "auto",
-        "--pretrain-run-name", "sft_fineweb"
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/rl_gsm8k.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "sft_fineweb"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
-      "problemMatcher": []
-    },
-    {
-      "label": "[*] [5r] RL: resume run (pick config + checkpoint)",
-      "type": "process",
-      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "args": [
-        "scripts/train/rl.py",
-        "--config", "${input:rlConfig}",
-        "--resume", "${input:resumeTarget}"
-      ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [6] Chat: latest rl_gsm8k run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/chat.py",
-        "--run-name", "rl_gsm8k",
-        "--max-new-tokens", "256",
-        "--strategy", "top_p", "--top-p", "0.9", "--temperature", "0.8",
-        "--frequency-penalty", "0.4", "--presence-penalty", "0.4",
-        "--system", "Solve the problem step by step. End with the final answer on its own line as: #### <number>"
+        "--run-name",
+        "rl_gsm8k",
+        "--max-new-tokens",
+        "256",
+        "--strategy",
+        "top_p",
+        "--top-p",
+        "0.9",
+        "--temperature",
+        "0.8",
+        "--frequency-penalty",
+        "0.4",
+        "--presence-penalty",
+        "0.4",
+        "--system",
+        "Solve the problem step by step. End with the final answer on its own line as: #### <number>"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [7p] Benchmark: latest pretrain_fineweb run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/benchmark.py",
-        "--phase", "pretrain",
-        "--run-name", "pretrain_fineweb"
+        "--phase",
+        "pretrain",
+        "--run-name",
+        "pretrain_fineweb"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [7s] Benchmark: latest sft_fineweb run",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/benchmark.py",
-        "--phase", "sft",
-        "--run-name", "sft_fineweb"
+        "--phase",
+        "sft",
+        "--run-name",
+        "sft_fineweb"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [7r] Benchmark: latest rl_gsm8k run (with GSM8K solve_rate)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/benchmark.py",
-        "--phase", "rl",
-        "--run-name", "rl_gsm8k"
+        "--phase",
+        "rl",
+        "--run-name",
+        "rl_gsm8k"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [8] LM-eval: debug_shakespeare (wikitext ppl, capped — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "debug_shakespeare",
-        "--tasks", "wikitext",
-        "--num-fewshot", "0",
-        "--limit", "200"
+        "--run-name",
+        "debug_shakespeare",
+        "--tasks",
+        "wikitext",
+        "--num-fewshot",
+        "0",
+        "--limit",
+        "200"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[10M] [8] LM-eval: pretrain_shakespeare (wikitext + lambada — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "pretrain_shakespeare",
-        "--tasks", "wikitext,lambada_openai",
-        "--num-fewshot", "0"
+        "--run-name",
+        "pretrain_shakespeare",
+        "--tasks",
+        "wikitext,lambada_openai",
+        "--num-fewshot",
+        "0"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [8] LM-eval: pretrain_tinystories (lambada/piqa/wikitext — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "pretrain_tinystories",
-        "--tasks", "lambada_openai,piqa,wikitext",
-        "--num-fewshot", "0"
+        "--run-name",
+        "pretrain_tinystories",
+        "--tasks",
+        "lambada_openai,piqa,wikitext",
+        "--num-fewshot",
+        "0"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [8] LM-eval: pretrain_fineweb (lambada/piqa/arc/hellaswag/wikitext — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "pretrain_fineweb",
-        "--tasks", "lambada_openai,piqa,arc_easy,hellaswag,wikitext",
-        "--num-fewshot", "0"
+        "--run-name",
+        "pretrain_fineweb",
+        "--tasks",
+        "lambada_openai,piqa,arc_easy,hellaswag,wikitext",
+        "--num-fewshot",
+        "0"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [5b] RL: rl_smoketest (GRPO from sft_smoketest)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
-        "scripts/train/rl.py",
-        "--config", "configs/1.3M/rl_smoketest.yaml",
-        "--from-pretrained", "auto",
-        "--pretrain-run-name", "sft_smoketest"
+        "scripts/train/train.py",
+        "--config",
+        "configs/1.3M/rl_smoketest.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "sft_smoketest"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [8s] LM-eval: sft_smoketest (wikitext — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "sft_smoketest",
-        "--tasks", "wikitext",
-        "--num-fewshot", "0",
-        "--limit", "200"
+        "--run-name",
+        "sft_smoketest",
+        "--tasks",
+        "wikitext",
+        "--num-fewshot",
+        "0",
+        "--limit",
+        "200"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[1.3M] [8r] LM-eval: rl_smoketest (wikitext — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "rl_smoketest",
-        "--tasks", "wikitext",
-        "--num-fewshot", "0",
-        "--limit", "200"
+        "--run-name",
+        "rl_smoketest",
+        "--tasks",
+        "wikitext",
+        "--num-fewshot",
+        "0",
+        "--limit",
+        "200"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
@@ -717,129 +1169,225 @@
       "label": "[10M] [8s] LM-eval: sft_shakespeare (wikitext + lambada — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "sft_shakespeare",
-        "--tasks", "wikitext,lambada_openai",
-        "--num-fewshot", "0"
+        "--run-name",
+        "sft_shakespeare",
+        "--tasks",
+        "wikitext,lambada_openai",
+        "--num-fewshot",
+        "0"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [8s] LM-eval: sft_tinystories (lambada/piqa/wikitext — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "sft_tinystories",
-        "--tasks", "lambada_openai,piqa,wikitext",
-        "--num-fewshot", "0"
+        "--run-name",
+        "sft_tinystories",
+        "--tasks",
+        "lambada_openai,piqa,wikitext",
+        "--num-fewshot",
+        "0"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [8s] LM-eval: sft_fineweb (lambada/piqa/arc/hellaswag/wikitext — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "sft_fineweb",
-        "--tasks", "lambada_openai,piqa,arc_easy,hellaswag,wikitext",
-        "--num-fewshot", "0"
+        "--run-name",
+        "sft_fineweb",
+        "--tasks",
+        "lambada_openai,piqa,arc_easy,hellaswag,wikitext",
+        "--num-fewshot",
+        "0"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[100M] [8r] LM-eval: rl_gsm8k (MC suite + GSM8K solve, chat — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "rl_gsm8k",
-        "--tasks", "lambada_openai,piqa,arc_easy,hellaswag,wikitext,gsm8k",
-        "--num-fewshot", "0",
+        "--run-name",
+        "rl_gsm8k",
+        "--tasks",
+        "lambada_openai,piqa,arc_easy,hellaswag,wikitext,gsm8k",
+        "--num-fewshot",
+        "0",
         "--chat"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[10M] [5] RL: rl_shakespeare (GRPO from sft_shakespeare)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
-        "scripts/train/rl.py",
-        "--config", "configs/10M/rl_shakespeare.yaml",
-        "--from-pretrained", "auto",
-        "--pretrain-run-name", "sft_shakespeare"
+        "scripts/train/train.py",
+        "--config",
+        "configs/10M/rl_shakespeare.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "sft_shakespeare"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [5] RL: rl_stories (GRPO for lexical variety, from sft_tinystories)",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
-        "scripts/train/rl.py",
-        "--config", "configs/29M/rl_stories.yaml",
-        "--from-pretrained", "auto",
-        "--pretrain-run-name", "sft_tinystories"
+        "scripts/train/train.py",
+        "--config",
+        "configs/29M/rl_stories.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "sft_tinystories"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[10M] [8r] LM-eval: rl_shakespeare (wikitext + lambada — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "rl_shakespeare",
-        "--tasks", "wikitext,lambada_openai",
-        "--num-fewshot", "0"
+        "--run-name",
+        "rl_shakespeare",
+        "--tasks",
+        "wikitext,lambada_openai",
+        "--num-fewshot",
+        "0"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
       "label": "[29M] [8r] LM-eval: rl_stories (lambada/piqa/wikitext — needs .[eval])",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "linux": { "command": "${workspaceFolder}/.venv/bin/python" },
-      "osx": { "command": "${workspaceFolder}/.venv/bin/python" },
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
       "args": [
         "scripts/inference/eval_harness.py",
-        "--run-name", "rl_stories",
-        "--tasks", "lambada_openai,piqa,wikitext",
-        "--num-fewshot", "0"
+        "--run-name",
+        "rl_stories",
+        "--tasks",
+        "lambada_openai,piqa,wikitext",
+        "--num-fewshot",
+        "0"
       ],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
       "problemMatcher": []
     },
     {
@@ -898,43 +1446,599 @@
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
+    },
+    {
+      "label": "[*] [Tr] Train: resume run (pick config + checkpoint)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "${input:trainConfig}",
+        "--resume",
+        "${input:resumeTarget}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": [],
+      "detail": "Stage comes from the chosen config. Restores full state (weights+optim+step) into a new run dir."
+    },
+    {
+      "label": "[*] [Tc] Train: continue from finished run (fresh optim, pick config)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "${input:trainConfig}",
+        "--from-pretrained",
+        "auto"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": [],
+      "detail": "Weights-only bootstrap from the latest run matching the config's run_name; fresh optimizer/step."
+    },
+    {
+      "label": "[100M] [10a] Data: MC arc_easy (DPO train/val via lm-eval)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/make_mc_data.py",
+        "--task",
+        "arc_easy",
+        "--output-dir",
+        "data/arc_easy"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": [],
+      "detail": "Needs the .[eval] extra. Held-out test stays for evaluation."
+    },
+    {
+      "label": "[100M] [10b] Data: MC piqa",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/make_mc_data.py",
+        "--task",
+        "piqa",
+        "--output-dir",
+        "data/piqa"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [10c] Data: MC hellaswag",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/make_mc_data.py",
+        "--task",
+        "hellaswag",
+        "--output-dir",
+        "data/hellaswag"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [10d] Data: science corpus download (sciq)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/download_corpus.py",
+        "--source",
+        "science",
+        "--output",
+        "data/science/corpus.jsonl"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [10e] Data: science corpus prepare",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/prepare_data.py",
+        "--corpus",
+        "data/science/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--tokenizer",
+        "data/fineweb/tokenizer.json",
+        "--output",
+        "data/science/",
+        "--val-frac",
+        "0.02"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [10f] Data: wikitext-103 download",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/download_corpus.py",
+        "--source",
+        "wikitext",
+        "--output",
+        "data/wikitext/corpus.jsonl"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [10g] Data: wikitext-103 prepare",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/prepare_data.py",
+        "--corpus",
+        "data/wikitext/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--tokenizer",
+        "data/fineweb/tokenizer.json",
+        "--output",
+        "data/wikitext/",
+        "--val-frac",
+        "0.02"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [10h] Data: books download (BookCorpusOpen, 20k cap)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/download_corpus.py",
+        "--source",
+        "books",
+        "--output",
+        "data/books/corpus.jsonl",
+        "--max-docs",
+        "20000"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [10i] Data: books prepare",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/data/prepare_data.py",
+        "--corpus",
+        "data/books/corpus.jsonl",
+        "--jsonl-key",
+        "text",
+        "--tokenizer",
+        "data/fineweb/tokenizer.json",
+        "--output",
+        "data/books/",
+        "--val-frac",
+        "0.01"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [11a] DAPT: dapt_arc (sciq science, from pretrain_fineweb)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/dapt_arc.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "pretrain_fineweb"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [11b] DPO: dpo_arc (ARC-Easy, from dapt_arc)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/dpo_arc.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "dapt_arc"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [11c] DPO: dpo_piqa (from pretrain_fineweb)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/dpo_piqa.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "pretrain_fineweb"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [11d] DPO: dpo_hellaswag (acc_norm, from pretrain_fineweb)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/dpo_hellaswag.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "pretrain_fineweb"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [11e] DAPT: dapt_wikitext (DAPT-only, from pretrain_fineweb)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/dapt_wikitext.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "pretrain_fineweb"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "[100M] [11f] DAPT: dapt_lambada (DAPT-only, from pretrain_fineweb)",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/train/train.py",
+        "--config",
+        "configs/100M/dapt_lambada.yaml",
+        "--from-pretrained",
+        "auto",
+        "--pretrain-run-name",
+        "pretrain_fineweb"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
     }
   ],
   "inputs": [
     {
-      "id": "pretrainConfig",
+      "id": "trainConfig",
       "type": "pickString",
-      "description": "Pretrain config to resume",
+      "description": "Training config (stage is read from the config)",
       "options": [
-        { "label": "[1.3M] debug_shakespeare", "value": "configs/1.3M/debug_shakespeare.yaml" },
-        { "label": "[10M]  pretrain_shakespeare", "value": "configs/10M/pretrain_shakespeare.yaml" },
-        { "label": "[29M]  pretrain_tinystories", "value": "configs/29M/pretrain_tinystories.yaml" },
-        { "label": "[100M] pretrain_fineweb", "value": "configs/100M/pretrain_fineweb.yaml" }
+        {
+          "label": "[1.3M] cpu_smoketest",
+          "value": "configs/1.3M/cpu_smoketest.yaml"
+        },
+        {
+          "label": "[1.3M] debug_shakespeare",
+          "value": "configs/1.3M/debug_shakespeare.yaml"
+        },
+        {
+          "label": "[1.3M] dpo_smoketest",
+          "value": "configs/1.3M/dpo_smoketest.yaml"
+        },
+        {
+          "label": "[1.3M] pretrain_shakespeare_char",
+          "value": "configs/1.3M/pretrain_shakespeare_char.yaml"
+        },
+        {
+          "label": "[1.3M] rl_smoketest",
+          "value": "configs/1.3M/rl_smoketest.yaml"
+        },
+        {
+          "label": "[1.3M] sft_smoketest",
+          "value": "configs/1.3M/sft_smoketest.yaml"
+        },
+        {
+          "label": "[100M] dapt_arc",
+          "value": "configs/100M/dapt_arc.yaml"
+        },
+        {
+          "label": "[100M] dapt_lambada",
+          "value": "configs/100M/dapt_lambada.yaml"
+        },
+        {
+          "label": "[100M] dapt_wikitext",
+          "value": "configs/100M/dapt_wikitext.yaml"
+        },
+        {
+          "label": "[100M] dpo_arc",
+          "value": "configs/100M/dpo_arc.yaml"
+        },
+        {
+          "label": "[100M] dpo_hellaswag",
+          "value": "configs/100M/dpo_hellaswag.yaml"
+        },
+        {
+          "label": "[100M] dpo_piqa",
+          "value": "configs/100M/dpo_piqa.yaml"
+        },
+        {
+          "label": "[100M] pretrain_fineweb",
+          "value": "configs/100M/pretrain_fineweb.yaml"
+        },
+        {
+          "label": "[100M] rl_gsm8k",
+          "value": "configs/100M/rl_gsm8k.yaml"
+        },
+        {
+          "label": "[100M] sft_fineweb",
+          "value": "configs/100M/sft_fineweb.yaml"
+        },
+        {
+          "label": "[10M] pretrain_shakespeare",
+          "value": "configs/10M/pretrain_shakespeare.yaml"
+        },
+        {
+          "label": "[10M] rl_shakespeare",
+          "value": "configs/10M/rl_shakespeare.yaml"
+        },
+        {
+          "label": "[10M] sft_shakespeare",
+          "value": "configs/10M/sft_shakespeare.yaml"
+        },
+        {
+          "label": "[29M] pretrain_small",
+          "value": "configs/29M/pretrain_small.yaml"
+        },
+        {
+          "label": "[29M] pretrain_tinystories",
+          "value": "configs/29M/pretrain_tinystories.yaml"
+        },
+        {
+          "label": "[29M] rl_stories",
+          "value": "configs/29M/rl_stories.yaml"
+        },
+        {
+          "label": "[29M] sft_tinystories",
+          "value": "configs/29M/sft_tinystories.yaml"
+        }
       ],
-      "default": "configs/29M/pretrain_tinystories.yaml"
-    },
-    {
-      "id": "sftConfig",
-      "type": "pickString",
-      "description": "SFT config to resume",
-      "options": [
-        { "label": "[1.3M] sft_smoketest", "value": "configs/1.3M/sft_smoketest.yaml" },
-        { "label": "[10M]  sft_shakespeare", "value": "configs/10M/sft_shakespeare.yaml" },
-        { "label": "[29M]  sft_tinystories", "value": "configs/29M/sft_tinystories.yaml" },
-        { "label": "[100M] sft_fineweb", "value": "configs/100M/sft_fineweb.yaml" }
-      ],
-      "default": "configs/29M/sft_tinystories.yaml"
-    },
-    {
-      "id": "rlConfig",
-      "type": "pickString",
-      "description": "RL config to resume",
-      "options": [
-        { "label": "[1.3M] rl_smoketest", "value": "configs/1.3M/rl_smoketest.yaml" },
-        { "label": "[29M]  rl_stories", "value": "configs/29M/rl_stories.yaml" },
-        { "label": "[100M] rl_gsm8k", "value": "configs/100M/rl_gsm8k.yaml" }
-      ],
-      "default": "configs/100M/rl_gsm8k.yaml"
+      "default": "configs/100M/dpo_arc.yaml"
     },
     {
       "id": "resumeTarget",

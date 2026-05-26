@@ -10,10 +10,10 @@
 #        python scripts/data/make_rl_smoketest_data.py
 #
 # Then launch (from scratch — no SFT bootstrap needed for a smoketest):
-#   python scripts/train/rl.py --config configs/rl_smoketest.yaml
+#   python scripts/train/train.py --config configs/rl_smoketest.yaml
 #
 # Or bootstrap from an SFT smoketest run:
-#   python scripts/train/rl.py --config configs/rl_smoketest.yaml --from-pretrained auto
+#   python scripts/train/train.py --config configs/rl_smoketest.yaml --from-pretrained auto
 
 run_name: rl_smoketest
 output_dir: runs

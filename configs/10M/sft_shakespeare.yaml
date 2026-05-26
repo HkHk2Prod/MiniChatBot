@@ -14,7 +14,7 @@
 #        python scripts/data/make_sft_smoketest_data.py
 #
 # Then launch:
-#   python scripts/train/sft.py --config configs/sft_shakespeare.yaml \
+#   python scripts/train/train.py --config configs/sft_shakespeare.yaml \
 #       --from-pretrained auto --pretrain-run-name pretrain_shakespeare
 
 run_name: sft_shakespeare
