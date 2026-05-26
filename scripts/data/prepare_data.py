@@ -63,7 +63,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Tokenize a corpus into a packed uint16 .bin file."
     )
-    parser.add_argument("--corpus", required=True, help="Text file, JSONL file, or directory of .txt.")
+    parser.add_argument(
+        "--corpus", required=True, help="Text file, JSONL file, or directory of .txt."
+    )
     parser.add_argument("--tokenizer", required=True, help="Path to a trained tokenizer.json.")
     parser.add_argument(
         "--output",

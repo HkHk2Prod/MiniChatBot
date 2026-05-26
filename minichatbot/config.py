@@ -185,7 +185,8 @@ _VALID_DEVICE = {"auto", "cuda", "cpu", "mps"}
 def validate(cfg: Config) -> None:
     if cfg.trainer.precision not in _VALID_PRECISION:
         raise ValueError(
-            f"trainer.precision={cfg.trainer.precision!r}; expected one of {sorted(_VALID_PRECISION)}"
+            f"trainer.precision={cfg.trainer.precision!r}; "
+            f"expected one of {sorted(_VALID_PRECISION)}"
         )
     if cfg.model.norm_type not in _VALID_NORM:
         raise ValueError(
@@ -193,7 +194,8 @@ def validate(cfg: Config) -> None:
         )
     if cfg.optim.lr_schedule not in _VALID_LR_SCHED:
         raise ValueError(
-            f"optim.lr_schedule={cfg.optim.lr_schedule!r}; expected one of {sorted(_VALID_LR_SCHED)}"
+            f"optim.lr_schedule={cfg.optim.lr_schedule!r}; "
+            f"expected one of {sorted(_VALID_LR_SCHED)}"
         )
     if cfg.device not in _VALID_DEVICE:
         raise ValueError(

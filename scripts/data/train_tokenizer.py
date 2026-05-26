@@ -1,8 +1,10 @@
 """Train a BPE tokenizer from a text corpus.
 
 Examples:
-    python scripts/data/train_tokenizer.py --corpus data/corpus.txt --output tokenizer.json --vocab-size 32000
-    python scripts/data/train_tokenizer.py --corpus data/corpus.jsonl --jsonl-key text --output tokenizer.json
+    python scripts/data/train_tokenizer.py --corpus data/corpus.txt \\
+        --output tokenizer.json --vocab-size 32000
+    python scripts/data/train_tokenizer.py --corpus data/corpus.jsonl \\
+        --jsonl-key text --output tokenizer.json
     python scripts/data/train_tokenizer.py --corpus data/raw/ --output tokenizer.json
 """
 
@@ -12,7 +14,7 @@ import argparse
 from pathlib import Path
 
 from minichatbot.data.corpus_iter import build_corpus_iterator
-from minichatbot.tokenizer.bpe import BPETokenizer, IM_END_TOKEN, IM_START_TOKEN
+from minichatbot.tokenizer.bpe import IM_END_TOKEN, IM_START_TOKEN, BPETokenizer
 
 
 def main() -> None:

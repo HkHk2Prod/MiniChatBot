@@ -9,7 +9,8 @@ Examples:
 
     # Specific checkpoint or run dir
     python scripts/inference/generate.py --checkpoint runs/.../ckpt_step_00000200.pt "ROMEO:"
-    python scripts/inference/generate.py --checkpoint runs/20260507_180000_debug_shakespeare "ROMEO:"
+    python scripts/inference/generate.py \\
+        --checkpoint runs/20260507_180000_debug_shakespeare "ROMEO:"
 
     # Sampling strategy + temperature
     python scripts/inference/generate.py --strategy top_p --top-p 0.9 --temperature 0.8 "..."

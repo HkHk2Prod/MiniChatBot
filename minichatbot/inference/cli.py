@@ -85,7 +85,10 @@ def resolve_checkpoint(
         if p.is_file():
             return p
         if p.is_dir():
-            ckpt = (find_best_checkpoint(p) or find_latest_checkpoint(p)) if prefer_best else find_latest_checkpoint(p)
+            if prefer_best:
+                ckpt = find_best_checkpoint(p) or find_latest_checkpoint(p)
+            else:
+                ckpt = find_latest_checkpoint(p)
             if ckpt is None:
                 raise SystemExit(f"No checkpoints found in {p}/checkpoints/")
             return ckpt
