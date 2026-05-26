@@ -55,8 +55,8 @@ optim:
 
 trainer:
   max_steps: 600          # ~4 epochs over 2.25K ARC-Easy train examples @ bs 16
-  batch_size: 16
-  grad_accum_steps: 1
+  batch_size: 2           # rows per step = batch x n_choices, doubled by the frozen ref model
+  grad_accum_steps: 8     # effective batch 16, unchanged
   grad_clip: 1.0
   precision: bf16
   compile: false
