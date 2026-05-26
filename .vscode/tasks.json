@@ -1275,11 +1275,12 @@
         "[100M] [3f] DPO: dpo_piqa (from pretrain_fineweb)",
         "[100M] [3g] DPO: dpo_hellaswag (acc_norm, from pretrain_fineweb)",
         "[100M] [3h] DAPT: dapt_wikitext (DAPT-only, from pretrain_fineweb)",
-        "[100M] [3i] DAPT: dapt_lambada (DAPT-only, from pretrain_fineweb)"
+        "[100M] [3i] DAPT: dapt_lambada (DAPT-only, from pretrain_fineweb)",
+        "[*] Eval summary: aggregate run dirs -> runs/eval_summary.md"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": [],
-      "detail": "Needs the .[eval] extra (MC data). Each branch writes its own run dir."
+      "detail": "Needs the .[eval] extra (MC data). Each branch writes its own run dir; the final step aggregates every run's lm_eval into runs/eval_summary.md."
     },
     {
       "label": "[1.3M] [9] FULL PIPELINE: download -> pretrain -> chat",
@@ -1436,6 +1437,29 @@
       },
       "problemMatcher": [],
       "detail": "For SFT/RL/DPO checkpoints (stops at <|im_end|>). Needs the .[eval] extra."
+    },
+    {
+      "label": "[*] Eval summary: aggregate run dirs -> runs/eval_summary.md",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "linux": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.venv/bin/python"
+      },
+      "args": [
+        "scripts/inference/aggregate_evals.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": [],
+      "detail": "Lines up every run's lm_eval_*.json side by side (target tasks first). Pass --filter to compare one branch."
     },
     {
       "label": "[*] [T0] Train: from config — fresh (no bootstrap)",
