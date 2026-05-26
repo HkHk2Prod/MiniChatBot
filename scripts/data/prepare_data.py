@@ -28,6 +28,11 @@ from minichatbot.tokenizer.bpe import BPETokenizer
 
 UINT16_MAX = 65535
 DOC_BATCH_SIZE = 1024
+# Also cap a batch by total text size: with whole-book corpora (e.g.
+# BookCorpusOpen) a single document can be megabytes, so 1024 of them would
+# hold gigabytes of text/tokens in `encode_batch` at once. Flush on whichever
+# limit hits first to keep peak memory bounded regardless of document length.
+MAX_BATCH_CHARS = 8 * 1024 * 1024
 ITEMSIZE = np.dtype(np.uint16).itemsize  # bytes per token on disk
 COPY_CHUNK_BYTES = 8 * 1024 * 1024
 
@@ -35,21 +40,23 @@ COPY_CHUNK_BYTES = 8 * 1024 * 1024
 def tokenize_to_bin(corpus: Iterator[str], tokenizer: BPETokenizer, out_path: Path) -> int:
     """Stream-tokenize `corpus`, appending uint16 token ids to `out_path`.
 
-    Memory stays bounded by one ``DOC_BATCH_SIZE`` batch instead of the whole
-    corpus: each batch is encoded, written, and discarded. Returns the total
-    number of tokens written.
+    Memory stays bounded by one batch (capped by both ``DOC_BATCH_SIZE`` docs
+    and ``MAX_BATCH_CHARS`` of text) instead of the whole corpus: each batch is
+    encoded, written, and discarded. Returns the total number of tokens written.
     """
     total = 0
     batch: list[str] = []
+    batch_chars = 0
 
     with open(out_path, "wb") as fh:
 
         def flush() -> None:
-            nonlocal total
+            nonlocal total, batch_chars
             if not batch:
                 return
             ids_batch = tokenizer.encode_batch(batch, include_special=True)
             batch.clear()
+            batch_chars = 0
             arr = np.concatenate([np.asarray(ids, dtype=np.uint32) for ids in ids_batch])
             if arr.size and int(arr.max()) > UINT16_MAX:
                 raise ValueError(
@@ -62,7 +69,8 @@ def tokenize_to_bin(corpus: Iterator[str], tokenizer: BPETokenizer, out_path: Pa
 
         for text in tqdm(corpus, desc="tokenizing", unit=" docs"):
             batch.append(text)
-            if len(batch) >= DOC_BATCH_SIZE:
+            batch_chars += len(text)
+            if len(batch) >= DOC_BATCH_SIZE or batch_chars >= MAX_BATCH_CHARS:
                 flush()
         flush()
 
