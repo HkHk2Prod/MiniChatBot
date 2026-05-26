@@ -18,17 +18,22 @@ The project favors **clear, modular code over framework magic**: every component
 
 ## Installation
 
-The setup scripts handle venv creation, the right torch wheel for your hardware, and optional extras in one shot.
+Setup uses [uv](https://docs.astral.sh/uv/). The scripts create `.venv`, pick the right torch wheel for your hardware (uv's `--torch-backend=auto` detects your CUDA driver, or falls back to CPU), and install the project with extras in one shot. Install uv first if you don't have it:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh        # Linux / macOS
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"   # Windows
+```
 
 ### Windows (PowerShell)
 
 ```powershell
 git clone <repo-url> MiniChatBot
 cd MiniChatBot
-.\scripts\setup.ps1                # default: CUDA cu126, full extras
-.\scripts\setup.ps1 -Cpu           # CPU-only fallback
-.\scripts\setup.ps1 -Cuda cu128    # different CUDA version
-.\scripts\setup.ps1 -Force         # swap an existing CPU venv to CUDA
+.\scripts\setup.ps1                          # auto-detect torch backend, full extras
+.\scripts\setup.ps1 -Cpu                     # force CPU-only wheel
+.\scripts\setup.ps1 -TorchBackend cu128      # force a specific CUDA build
+.\scripts\setup.ps1 -Force                   # reinstall torch
 .\.venv\Scripts\Activate.ps1
 ```
 
@@ -37,19 +42,18 @@ cd MiniChatBot
 ```bash
 git clone <repo-url> MiniChatBot
 cd MiniChatBot
-bash scripts/setup.sh              # default: CUDA cu126
-USE_CPU=1 bash scripts/setup.sh    # CPU-only fallback
-FORCE=1 bash scripts/setup.sh      # swap CPU venv to CUDA
+bash scripts/setup.sh              # auto-detect torch backend, full extras
+USE_CPU=1 bash scripts/setup.sh    # force CPU-only wheel
+TORCH_BACKEND=cu128 bash scripts/setup.sh   # force a specific CUDA build
 source .venv/bin/activate
 ```
 
 ### Manual (any platform)
 
 ```bash
-python -m venv .venv
+uv venv --seed .venv
 source .venv/bin/activate          # or .venv\Scripts\Activate.ps1 on Windows
-pip install torch --index-url https://download.pytorch.org/whl/cu126   # or omit --index-url for CPU
-pip install -e ".[dev,tensorboard,data]"
+uv pip install --torch-backend=auto -e ".[dev,tensorboard,data]"   # or --torch-backend=cpu / cu126
 ```
 
 The data extras (`datasets`, `huggingface_hub`) are needed for any source other than `tiny_shakespeare` (which uses plain `urllib`).
@@ -230,7 +234,7 @@ configs/
 ## Development
 
 ```bash
-pip install -e ".[dev]"     # installs pytest, ruff, mypy
+uv pip install -e ".[dev]"  # installs pytest, ruff, mypy
 ruff check .                 # lint
 ruff format .                # format
 pytest                       # tests (work in progress)
