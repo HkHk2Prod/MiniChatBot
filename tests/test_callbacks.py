@@ -49,6 +49,29 @@ def test_keep_last_k_prunes_old_step_checkpoints(tmp_path: Path) -> None:
     assert _step_ckpts(tmp_path) == ["ckpt_step_00000003.pt", "ckpt_step_00000004.pt"]
 
 
+def test_prunes_before_saving_to_cap_disk_peak(tmp_path: Path) -> None:
+    # Prune-before-save means that at the instant a new checkpoint is written,
+    # disk holds at most keep_last_k-1 *older* step checkpoints — so the peak
+    # (older files + the one being written) stays at keep_last_k, never +1.
+    seen_at_save: list[int] = []
+
+    class _CountingTrainer:
+        def save_checkpoint(self, path) -> None:
+            d = Path(path).parent
+            d.mkdir(parents=True, exist_ok=True)
+            seen_at_save.append(len(list(d.glob("ckpt_step_*.pt"))))
+            Path(path).touch()
+
+    cb = CheckpointCallback(every=1, keep_last_k=2)
+    for step in (1, 2, 3, 4, 5):
+        ctx = _ctx(tmp_path, step)
+        ctx.trainer = _CountingTrainer()
+        cb.on_step_end(ctx)
+
+    assert max(seen_at_save) <= 1  # keep_last_k - reserve(1); never keep_last_k+1
+    assert _step_ckpts(tmp_path) == ["ckpt_step_00000004.pt", "ckpt_step_00000005.pt"]
+
+
 def test_best_checkpoint_survives_pruning(tmp_path: Path) -> None:
     cb = CheckpointCallback(every=1, keep_last_k=1)
     cb.on_step_end(_ctx(tmp_path, 1))

@@ -56,7 +56,7 @@ class CheckpointCallback(Callback):
         ctx.trainer.save_checkpoint(path)
         return path
 
-    def _prune(self, ctx: CallbackContext) -> None:
+    def _prune(self, ctx: CallbackContext, reserve: int = 0) -> None:
         if self.keep_last_k is None or self.keep_last_k <= 0:
             return
         d = self._ckpt_dir(ctx)
@@ -64,16 +64,24 @@ class CheckpointCallback(Callback):
             return
         # Glob ONLY step-numbered checkpoints — ckpt_best.pt must survive pruning.
         ckpts = sorted(d.glob("ckpt_step_*.pt"))
-        for old in ckpts[: -self.keep_last_k]:
+        # `reserve` slots are held back for checkpoints about to be written, so
+        # prune down to keep_last_k - reserve now and let the pending save refill.
+        keep = max(self.keep_last_k - reserve, 0)
+        stale = ckpts[:-keep] if keep else ckpts
+        for old in stale:
             with contextlib.suppress(OSError):
                 old.unlink()
 
     def on_step_end(self, ctx: CallbackContext) -> None:
         if ctx.step == 0 or ctx.step % self.every != 0:
             return
+        # Prune BEFORE writing, reserving one slot for the checkpoint we're about
+        # to save. Pruning after the save means disk briefly holds keep_last_k+1
+        # full checkpoints (plus the in-progress .tmp) — that peak is what tips a
+        # near-full disk into ENOSPC mid-write.
+        self._prune(ctx, reserve=1)
         path = self._save(ctx, self._path_for_step(ctx))
         ctx.extra["checkpoint_path"] = path
-        self._prune(ctx)
 
     def on_eval_end(self, ctx: CallbackContext) -> None:
         if ctx.trainer is None or not ctx.eval_metrics:
@@ -93,9 +101,9 @@ class CheckpointCallback(Callback):
     def on_train_end(self, ctx: CallbackContext) -> None:
         # Final periodic save if the latest step wasn't already covered.
         if not self._path_for_step(ctx).exists():
+            self._prune(ctx, reserve=1)
             path = self._save(ctx, self._path_for_step(ctx))
             ctx.extra["checkpoint_path"] = path
-            self._prune(ctx)
         # One-line best-model summary. Captured by the logfile tee since
         # logfile.on_train_end fires last (LIFO).
         if self._best_step is not None and self._best_loss is not None:
