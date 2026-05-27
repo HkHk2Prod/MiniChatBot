@@ -49,18 +49,24 @@ class RunEvals:
         return self.run_name
 
 
+# Numeric fields lm-eval/eval_harness emit alongside real metrics that aren't
+# performance signals (constant per task), so they're dropped from the tables.
+_NON_METRIC_KEYS = frozenset({"sample_len", "samples"})
+
+
 def _scores(task_results: dict) -> dict[str, float]:
     """Pull plain numeric metrics from an lm-eval task block.
 
     lm-eval keys look like ``"acc,none"`` / ``"acc_stderr,none"`` / ``"alias"``;
-    keep the numeric, non-stderr ones and drop the ``,<filter>`` suffix.
+    keep the numeric, non-stderr ones and drop the ``,<filter>`` suffix. Bookkeeping
+    fields like ``sample_len`` are numeric but not metrics, so they're skipped too.
     """
     out: dict[str, float] = {}
     for key, val in task_results.items():
         if not isinstance(val, (int, float)) or isinstance(val, bool):
             continue
         name = key.split(",")[0]
-        if name == "alias" or name.endswith("_stderr"):
+        if name == "alias" or name.endswith("_stderr") or name in _NON_METRIC_KEYS:
             continue
         out[name] = float(val)
     return out
@@ -155,13 +161,17 @@ def _lower_is_better(metric: str) -> bool:
 
 @dataclass
 class Improvement:
-    task: str       # the pipeline's target task
-    chain: str      # stages carrying this metric, e.g. "pretrain → dapt → dpo"
+    task: str                        # the pipeline's target task
     metric: str
-    base: float     # value at the first stage in the chain
-    final: float    # value at the last stage in the chain
-    delta: float    # final - base
-    improved: bool  # moved in the better direction for this metric
+    stages: list[tuple[str, float]]  # (stage, value) at each stage, in pipeline order
+    delta: float                     # value at the last stage minus the first
+    improved: bool                   # moved in the better direction for this metric
+
+
+def _stage_columns(imps: list[Improvement]) -> list[str]:
+    """Union of stage names across improvements, in canonical pipeline order."""
+    seen = {stage for i in imps for stage, _ in i.stages}
+    return sorted(seen, key=lambda s: (_stage_rank(s), s))
 
 
 def build_pipelines(runs: list[RunEvals]) -> list[tuple[str, list[RunEvals]]]:
@@ -188,21 +198,22 @@ def build_pipelines(runs: list[RunEvals]) -> list[tuple[str, list[RunEvals]]]:
 
 
 def build_improvements(runs: list[RunEvals]) -> list[Improvement]:
-    """One row per (pipeline target task, metric): the start -> final change
-    along the pipeline. Metrics seen at fewer than two stages are skipped, since
-    a single data point has no delta to report."""
+    """One row per (pipeline target task, metric), carrying the metric's value at
+    every stage of the pipeline so progress shows step by step. Metrics seen at
+    fewer than two stages are skipped — a single data point has no change."""
     out: list[Improvement] = []
     for task, chain in build_pipelines(runs):
         for metric in sorted({m for r in chain for m in r.metrics.get(task, {})}):
-            present = [r for r in chain if metric in r.metrics.get(task, {})]
-            if len(present) < 2:
+            stages = [
+                (r.stage or "?", r.metrics[task][metric])
+                for r in chain
+                if metric in r.metrics.get(task, {})
+            ]
+            if len(stages) < 2:
                 continue
-            base = present[0].metrics[task][metric]
-            final = present[-1].metrics[task][metric]
-            delta = final - base
+            delta = stages[-1][1] - stages[0][1]
             improved = delta < 0 if _lower_is_better(metric) else delta > 0
-            chain_str = " → ".join(r.stage or "?" for r in present)
-            out.append(Improvement(task, chain_str, metric, base, final, delta, improved))
+            out.append(Improvement(task, metric, stages, delta, improved))
     return out
 
 
@@ -241,28 +252,29 @@ def render_improvements_md(runs: list[RunEvals]) -> list[str]:
     imps = build_improvements(runs)
     if not imps:
         return []
+    stage_cols = _stage_columns(imps)
     lines = [
         "## pipeline improvements",
         "",
-        "_Change on each pipeline's target task across its stages (start → final). "
+        "_Target-task metric at each pipeline stage, with the net change. "
         "✓ = moved the right way: higher accuracy, or lower perplexity._",
         "",
     ]
-    rows = [
-        [
-            i.task,
-            i.chain,
-            i.metric,
-            fmt(i.base),
-            fmt(i.final),
-            fmt_delta(i.delta),
-            "✓" if i.improved else "✗",
-        ]
-        for i in imps
-    ]
+    rows = []
+    for i in imps:
+        by_stage = dict(i.stages)
+        rows.append(
+            [
+                i.task,
+                i.metric,
+                *[fmt(by_stage.get(s)) for s in stage_cols],
+                fmt_delta(i.delta),
+                "✓" if i.improved else "✗",
+            ]
+        )
     lines += _md_table(
-        ["pipeline", "chain", "metric", "base", "final", "Δ", "ok"],
-        ["l", "l", "l", "r", "r", "r", "l"],
+        ["pipeline", "metric", *stage_cols, "Δ", "ok"],
+        ["l", "l", *["r"] * len(stage_cols), "r", "l"],
         rows,
     )
     return lines
@@ -313,19 +325,22 @@ def render_improvements_text(runs: list[RunEvals]) -> str:
     imps = build_improvements(runs)
     if not imps:
         return ""
+    stage_cols = _stage_columns(imps)
     task_w = max([len("pipeline"), *(len(i.task) for i in imps)])
-    chain_w = max([len("chain"), *(len(i.chain) for i in imps)])
     metric_w = max([len("metric"), *(len(i.metric) for i in imps)])
+    col_w = {s: max(len(s), 9) for s in stage_cols}
     head = (
-        f"{'pipeline':<{task_w}}  {'chain':<{chain_w}}  {'metric':<{metric_w}}  "
-        f"{'base':>9}  {'final':>9}  {'delta':>9}  ok"
+        f"{'pipeline':<{task_w}}  {'metric':<{metric_w}}  "
+        + "  ".join(f"{s:>{col_w[s]}}" for s in stage_cols)
+        + f"  {'delta':>9}  ok"
     )
-    out = ["pipeline improvements (target task, start -> final):", head, "-" * len(head)]
+    out = ["pipeline improvements (target metric at each stage; net delta):", head, "-" * len(head)]
     for i in imps:
+        by_stage = dict(i.stages)
+        cells = "  ".join(f"{fmt(by_stage.get(s)):>{col_w[s]}}" for s in stage_cols)
         out.append(
-            f"{i.task:<{task_w}}  {i.chain:<{chain_w}}  {i.metric:<{metric_w}}  "
-            f"{fmt(i.base):>9}  {fmt(i.final):>9}  {fmt_delta(i.delta):>9}  "
-            f"{'yes' if i.improved else 'no'}"
+            f"{i.task:<{task_w}}  {i.metric:<{metric_w}}  {cells}  "
+            f"{fmt_delta(i.delta):>9}  {'yes' if i.improved else 'no'}"
         )
     return "\n".join(out)
 
@@ -418,10 +433,8 @@ def main() -> None:
             "pipelines": [
                 {
                     "task": i.task,
-                    "chain": i.chain,
                     "metric": i.metric,
-                    "base": i.base,
-                    "final": i.final,
+                    "stages": [{"stage": s, "value": v} for s, v in i.stages],
                     "delta": i.delta,
                     "improved": i.improved,
                 }

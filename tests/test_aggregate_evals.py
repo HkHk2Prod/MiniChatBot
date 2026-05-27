@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "infere
 from aggregate_evals import (  # noqa: E402
     RunEvals,
     _lower_is_better,
+    _scores,
     _stamped,
     build_improvements,
     build_pipelines,
@@ -86,18 +87,48 @@ def test_improvements_track_direction_per_metric() -> None:
     imps = {(i.task, i.metric): i for i in build_improvements(_runs())}
 
     arc = imps[("arc_easy", "acc")]
-    assert arc.chain == "pretrain → dapt → dpo"
-    assert arc.base == 0.40 and arc.final == 0.52
+    assert arc.stages == [("pretrain", 0.40), ("dapt", 0.45), ("dpo", 0.52)]
     assert round(arc.delta, 2) == 0.12 and arc.improved is True
 
     # perplexity dropped 30 -> 21: a negative delta that counts as an improvement
     ppl = imps[("lambada_openai", "perplexity")]
-    assert ppl.base == 30.0 and ppl.final == 21.0
+    assert ppl.stages == [("pretrain", 30.0), ("dapt", 21.0)]
     assert ppl.delta < 0 and ppl.improved is True
 
     # lambada accuracy rose 0.30 -> 0.34: positive delta, also an improvement
     lacc = imps[("lambada_openai", "acc")]
     assert lacc.delta > 0 and lacc.improved is True
+
+
+def test_shows_value_at_every_stage_including_sft_rl() -> None:
+    # A pretrain -> sft -> rl pipeline must surface the value at *each* stage,
+    # not just the endpoints, with a column per stage in the rendered table.
+    runs = [
+        _run("pretrain", "20260520_000000", "pretrain", {"piqa": {"acc": 0.60}}),
+        _run("sft", "20260521_000000", "sft", {"piqa": {"acc": 0.66}}, targets={"piqa"}),
+        _run("rl", "20260522_000000", "rl", {"piqa": {"acc": 0.71}}, targets={"piqa"}),
+    ]
+    (imp,) = build_improvements(runs)
+    assert imp.stages == [("pretrain", 0.60), ("sft", 0.66), ("rl", 0.71)]
+    assert round(imp.delta, 2) == 0.11 and imp.improved is True
+
+    header = next(ln for ln in render_improvements_md(runs) if ln.startswith("| pipeline"))
+    for stage in ("pretrain", "sft", "rl"):
+        assert stage in header
+
+
+def test_scores_drops_bookkeeping_fields() -> None:
+    # sample_len / samples are numeric but not metrics; alias/stderr also dropped.
+    block = {
+        "alias": "piqa",
+        "name": "piqa",
+        "sample_len": 1838,
+        "samples": 1838,
+        "acc,none": 0.61,
+        "acc_stderr,none": 0.012,
+        "acc_norm,none": 0.60,
+    }
+    assert _scores(block) == {"acc": 0.61, "acc_norm": 0.60}
 
 
 def test_regression_is_flagged_not_improved() -> None:
@@ -132,4 +163,7 @@ def test_markdown_includes_improvement_table() -> None:
     assert "## pipeline improvements" in md
     assert "## all scores" in md
     assert "✓" in md  # at least one pipeline improved
-    assert "pretrain → dapt → dpo" in md
+    # one column per stage present across pipelines
+    header = next(ln for ln in render_improvements_md(_runs()) if ln.startswith("| pipeline"))
+    for stage in ("pretrain", "dapt", "dpo"):
+        assert stage in header
