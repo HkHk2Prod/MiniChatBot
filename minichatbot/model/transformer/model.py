@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from minichatbot.config import ModelConfig
 from minichatbot.model import MODEL_REGISTRY
@@ -30,6 +31,7 @@ class Transformer(LanguageModel):
         self.n_heads = cfg.n_heads
         self.d_model = cfg.d_model
         self.head_dim = cfg.d_model // cfg.n_heads
+        self.grad_checkpointing = False
 
         self.tok_embed = nn.Embedding(cfg.vocab_size, cfg.d_model)
         self.embed_dropout = (
@@ -67,6 +69,9 @@ class Transformer(LanguageModel):
             elif isinstance(m, nn.Embedding):
                 nn.init.normal_(m.weight, mean=0.0, std=0.02)
 
+    def set_gradient_checkpointing(self, enabled: bool) -> None:
+        self.grad_checkpointing = enabled
+
     def init_state(
         self, batch_size: int, device: torch.device
     ) -> TransformerState:
@@ -101,9 +106,18 @@ class Transformer(LanguageModel):
         new_state: TransformerState | None = (
             list(state) if state is not None else None
         )
+        # Checkpoint only when building a backward graph (training step) and not
+        # decoding with a KV cache — recompute on eval/decode would waste work
+        # and the cache path returns a non-checkpointable state object.
+        use_ckpt = self.grad_checkpointing and torch.is_grad_enabled() and state is None
         for i, block in enumerate(self.blocks):
             cache = state[i] if state is not None else None
-            x, new_cache = block(x, self.rope_cos, self.rope_sin, cache)
+            if use_ckpt:
+                x, new_cache = checkpoint(
+                    block, x, self.rope_cos, self.rope_sin, cache, use_reentrant=False
+                )
+            else:
+                x, new_cache = block(x, self.rope_cos, self.rope_sin, cache)
             if new_state is not None and new_cache is not None:
                 new_state[i] = new_cache
 
