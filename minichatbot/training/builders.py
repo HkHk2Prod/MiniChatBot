@@ -155,6 +155,7 @@ def build_model(
     pretrained_ckpt: Path | None,
     incoming_state: dict[str, Any] | None,
     weights_label: str,
+    grad_checkpointing: bool = False,
 ) -> LanguageModel:
     """Build the model and, if `pretrained_ckpt` is set, load ONLY its
     weights (step counter / optimizer stay fresh — the SFT/RL bootstrap).
@@ -167,6 +168,10 @@ def build_model(
         print(f"loading {weights_label} weights from {pretrained_ckpt}")
         assert incoming_state is not None  # guaranteed by prepare_model_state
         model.load_state_dict(incoming_state["model"])
+
+    if grad_checkpointing:
+        # Set on the raw module before torch.compile wraps it.
+        model.set_gradient_checkpointing(True)
 
     if compile:
         # torch.compile returns an OptimizedModule wrapper that delegates

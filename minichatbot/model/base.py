@@ -84,6 +84,10 @@ class LanguageModel(nn.Module, ABC):
             f"{cls.__name__} must override from_config"
         )
 
+    def set_gradient_checkpointing(self, enabled: bool) -> None:
+        """Enable activation checkpointing (recompute activations in backward to
+        save memory). No-op by default; architectures opt in by overriding."""
+
     def num_params(self, trainable_only: bool = True) -> int:
         if trainable_only:
             return sum(p.numel() for p in self.parameters() if p.requires_grad)

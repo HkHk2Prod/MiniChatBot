@@ -176,6 +176,7 @@ def build_and_train(
         effective_model_cfg, device=device, compile=cfg.trainer.compile,
         pretrained_ckpt=pretrained_ckpt, incoming_state=incoming_state,
         weights_label="previous-stage",
+        grad_checkpointing=cfg.trainer.grad_checkpointing,
     )
 
     loss_fn = build_loss(loss_key, device)

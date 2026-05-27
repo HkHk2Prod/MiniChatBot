@@ -69,6 +69,9 @@ class TrainerConfig:
     grad_clip: float | None = 1.0
     precision: str = "bf16"
     compile: bool = False
+    # Recompute each transformer block's activations during backward instead of
+    # storing them — large activation-memory cut for ~20-30% more compute.
+    grad_checkpointing: bool = False
 
 
 @dataclass
