@@ -1,21 +1,26 @@
-"""Shared training runner for pretrain / SFT / RL.
+"""Shared, config-driven training runner.
 
-The thin scripts in `scripts/` only handle CLI parsing + checkpoint-arg
-resolution; everything from "build tokenizer" through "trainer.fit()"
-lives here (and in `builders.py` for the per-step pieces) so adding a
-training stage is mostly just a new entry-point script.
+`scripts/train/train.py` only parses CLI args + resolves checkpoint paths;
+everything from "build tokenizer" through "trainer.fit()" lives here (with
+the per-step pieces in `builders.py`). The stage comes from `cfg.stage`,
+which selects the trainer via `TRAINER_BUILDERS` and the default dataset/
+collator/loss keys via `STAGE_DEFAULTS` — so adding a training stage is a
+new row in each plus (if it needs a custom step) a `Trainer` subclass.
 """
 
 from __future__ import annotations
 
+import copy
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import torch
 
 from minichatbot.config import Config, save_config
 from minichatbot.inference.generator import Generator
 from minichatbot.rl.rewards import REWARD_REGISTRY
+from minichatbot.tokenizer import Tokenizer
 from minichatbot.tokenizer.bpe import IM_END_TOKEN
 from minichatbot.training.builders import (
     build_callbacks,
@@ -27,34 +32,131 @@ from minichatbot.training.builders import (
     make_run_dir,
     prepare_model_state,
 )
+from minichatbot.training.dpo_trainer import DPOTrainer
+from minichatbot.training.losses.dpo import DPOLoss
 from minichatbot.training.optim import build_optimizer, build_scheduler
 from minichatbot.training.rl_trainer import GRPOTrainer
 from minichatbot.training.trainer import Trainer
-from minichatbot.utils.torch_helpers import resolve_device
+from minichatbot.utils.torch_helpers import resolve_device, unwrap_compiled
 
-Stage = Literal["pretrain", "sft", "rl"]
+# Per-stage default registry keys. `cfg.stage` selects the row; the optional
+# `cfg.dataset`/`cfg.collator`/`cfg.loss` fields override individual entries.
+# Extend the pipeline by adding a row here + a TRAINER_BUILDERS entry.
+STAGE_DEFAULTS: dict[str, dict[str, str]] = {
+    "pretrain": {"dataset": "pretrain", "collator": "pretrain", "loss": "pretrain"},
+    # DAPT (domain-adaptive pretraining) is continued next-token prediction on
+    # a tailored corpus — same machinery as pretrain, distinct stage name so a
+    # branch reads pretrain -> dapt -> dpo and each run is self-labelling.
+    "dapt": {"dataset": "pretrain", "collator": "pretrain", "loss": "pretrain"},
+    "sft": {"dataset": "sft", "collator": "sft", "loss": "sft"},
+    "rl": {"dataset": "rl", "collator": "rl", "loss": "grpo"},
+    "dpo": {"dataset": "mc", "collator": "mc", "loss": "dpo"},
+}
+
+# Stages with no in-trainer validation pass (no val loader; held-out eval
+# happens out-of-band). RL has no val; DPO's loss needs reference log-probs
+# the generic eval callback can't supply, so it's evaluated via lm-eval too.
+STAGES_WITHOUT_VAL: set[str] = {"rl", "dpo"}
+
+
+def _build_supervised_trainer(
+    cfg: Config,
+    *,
+    common_kwargs: dict[str, Any],
+    val_loader: Any,
+    tokenizer: Tokenizer,
+) -> Trainer:
+    return Trainer(val_loader=val_loader, **common_kwargs)
+
+
+def _build_grpo_trainer(
+    cfg: Config,
+    *,
+    common_kwargs: dict[str, Any],
+    val_loader: Any,
+    tokenizer: Tokenizer,
+) -> Trainer:
+    im_end_id = tokenizer.special_token_id(IM_END_TOKEN)
+    if im_end_id is None:
+        raise ValueError(
+            "RL needs the chat <|im_end|> token to know when a sampled "
+            "completion has ended. Train/load a tokenizer that includes it "
+            "(default in BPETokenizer.DEFAULT_SPECIALS)."
+        )
+    # `Generator.eos_id` is "whatever EOS the caller hands me"; here it's the
+    # chat turn-end so completions terminate cleanly. On the trainer side the
+    # same id is `chat_end_id` because that's what it represents in RL.
+    generator = Generator(strategy=build_sampling_strategy(cfg.rl), eos_id=im_end_id)
+    reward_fn = REWARD_REGISTRY[cfg.rl.reward]()
+    return GRPOTrainer(
+        rl_config=cfg.rl,
+        generator=generator,
+        reward_fn=reward_fn,
+        chat_end_id=im_end_id,
+        val_loader=None,
+        **common_kwargs,
+    )
+
+
+def _build_dpo_trainer(
+    cfg: Config,
+    *,
+    common_kwargs: dict[str, Any],
+    val_loader: Any,
+    tokenizer: Tokenizer,
+) -> Trainer:
+    # The DPO reference is a frozen snapshot of the initial (from-pretrained)
+    # policy — clone its current weights before any optimizer step. Cloning
+    # the uncompiled inner module keeps the copy plain (no torch.compile
+    # wrapper); freezing keeps it out of grad/optimizer.
+    policy = common_kwargs["model"]
+    device = common_kwargs["device"]
+    ref_model = copy.deepcopy(unwrap_compiled(policy)).to(device).eval()
+    for p in ref_model.parameters():
+        p.requires_grad_(False)
+    # The generic build_loss made a default DPOLoss; swap in the configured one.
+    kwargs = {**common_kwargs, "loss": DPOLoss(beta=cfg.dpo.beta, score_norm=cfg.dpo.score_norm)}
+    return DPOTrainer(ref_model=ref_model, val_loader=val_loader, **kwargs)
+
+
+# stage -> a callable that constructs its trainer from the common kwargs.
+TRAINER_BUILDERS: dict[str, Callable[..., Trainer]] = {
+    "pretrain": _build_supervised_trainer,
+    "dapt": _build_supervised_trainer,
+    "sft": _build_supervised_trainer,
+    "rl": _build_grpo_trainer,
+    "dpo": _build_dpo_trainer,
+}
 
 
 def build_and_train(
     cfg: Config,
     *,
-    stage: Stage,
-    dataset_key: str,
-    collator_key: str,
-    loss_key: str,
     pretrained_ckpt: Path | None = None,
     resume_ckpt: Path | None = None,
 ) -> None:
     """Build everything from `cfg` and run `Trainer.fit()`.
 
-    `pretrained_ckpt` loads ONLY model weights (SFT bootstrap, or RL on
-    top of SFT); step counter and optimizer state stay fresh.
-    `resume_ckpt` restores full training state. Mutually exclusive.
+    The stage is `cfg.stage`: it selects the trainer (`TRAINER_BUILDERS`)
+    and the default (dataset, collator, loss) registry keys
+    (`STAGE_DEFAULTS`), which `cfg.dataset`/`cfg.collator`/`cfg.loss` may
+    individually override.
 
-    `stage` selects the trainer: "pretrain"/"sft" use the supervised
-    `Trainer`; "rl" uses `GRPOTrainer` and additionally builds the
-    rollout `Generator` + reward function.
+    `pretrained_ckpt` loads ONLY model weights (a fresh trajectory on top
+    of a previous stage's checkpoint); `resume_ckpt` restores full training
+    state. Mutually exclusive.
     """
+    stage = cfg.stage or ""
+    if stage not in STAGE_DEFAULTS or stage not in TRAINER_BUILDERS:
+        raise ValueError(
+            f"Unknown training stage {stage!r}; known stages: "
+            f"{sorted(STAGE_DEFAULTS)}. Set `stage:` in the config."
+        )
+    defaults = STAGE_DEFAULTS[stage]
+    dataset_key = cfg.dataset or defaults["dataset"]
+    collator_key = cfg.collator or defaults["collator"]
+    loss_key = cfg.loss or defaults["loss"]
+
     torch.manual_seed(cfg.seed)
     device = resolve_device(cfg.device)
 
@@ -64,19 +166,16 @@ def build_and_train(
     tokenizer = build_tokenizer(cfg, run_dir)
     train_loader, val_loader = build_loaders(
         cfg, tokenizer, dataset_key=dataset_key, collator_key=collator_key,
-        device=device, with_val=(stage != "rl"),
+        device=device, with_val=(stage not in STAGES_WITHOUT_VAL),
     )
 
     incoming_state, effective_model_cfg, startup_warnings = prepare_model_state(
         cfg, resume_ckpt=resume_ckpt, pretrained_ckpt=pretrained_ckpt, device=device,
     )
-    # Just a label for the "loading X weights from ..." log line. SFT/RL
-    # bootstrap from the previous stage's checkpoint.
-    weights_label = "SFT" if stage == "rl" else "pretrain"
     model = build_model(
         effective_model_cfg, device=device, compile=cfg.trainer.compile,
         pretrained_ckpt=pretrained_ckpt, incoming_state=incoming_state,
-        weights_label=weights_label,
+        weights_label="previous-stage",
     )
 
     loss_fn = build_loss(loss_key, device)
@@ -98,39 +197,13 @@ def build_and_train(
         startup_warnings=startup_warnings,
     )
 
-    trainer: Trainer
-    if stage == "rl":
-        im_end_id = tokenizer.special_token_id(IM_END_TOKEN)
-        if im_end_id is None:
-            raise ValueError(
-                "RL needs the chat <|im_end|> token to know when a sampled "
-                "completion has ended. Train/load a tokenizer that includes it "
-                "(default in BPETokenizer.DEFAULT_SPECIALS)."
-            )
-        # `Generator.eos_id` is "whatever EOS the caller hands me" — the
-        # generator itself doesn't know about chat. Here we pass the chat
-        # turn-end so completions terminate cleanly; on the trainer side
-        # the same id is `chat_end_id` because that's what it actually
-        # represents within the RL pipeline.
-        generator = Generator(
-            strategy=build_sampling_strategy(cfg.rl), eos_id=im_end_id
-        )
-        reward_fn = REWARD_REGISTRY[cfg.rl.reward]()
-        trainer = GRPOTrainer(
-            rl_config=cfg.rl,
-            generator=generator,
-            reward_fn=reward_fn,
-            chat_end_id=im_end_id,
-            val_loader=None,
-            **common_kwargs,
-        )
-    else:
-        trainer = Trainer(val_loader=val_loader, **common_kwargs)
+    trainer = TRAINER_BUILDERS[stage](
+        cfg, common_kwargs=common_kwargs, val_loader=val_loader, tokenizer=tokenizer
+    )
 
     if resume_ckpt is not None:
-        stage_label = "RL " if stage == "rl" else ""
         print(
-            f"resuming {stage_label}from {resume_ckpt} "
+            f"resuming {stage} from {resume_ckpt} "
             f"(will continue past step {trainer.step})"
         )
         trainer.load_checkpoint(

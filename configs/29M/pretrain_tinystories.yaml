@@ -1,29 +1,37 @@
-# Mid-sized GPU run — TinyStories, ~25M params, bf16, ~2-4 hours on RTX 4080.
+# Mid-sized GPU run — TinyStories, ~23M params, bf16, ~11-23 hours on RTX 4080.
 #
 # Position in the ladder:
 #   debug_shakespeare.yaml -> pretrain_tinystories.yaml (this) -> pretrain_small.yaml / fineweb runs
 #
-# Goal: validate the full pipeline at non-trivial scale without burning a full
-# day. Big enough that loss curves, sample quality, and tok/s metrics become
-# meaningful; small enough to iterate on.
+# Goal: validate the full pipeline at non-trivial scale and produce a model
+# that's actually trained, not just exercised. Big enough that loss curves,
+# sample quality, and tok/s metrics become meaningful; small enough to iterate.
 #
 # Sizing rationale (TinyStories paper sweet spot for coherent narratives):
 #   ~23M params (6L, 8H, d_model=512, d_ff=1408)
 #   8K vocab — TinyStories deliberately uses a limited vocabulary
 #   seq_len 512 — most stories fit comfortably below this
 #   batch 32, bf16 -> fits ~14GB VRAM on a 16GB card with margin
-#   10K steps × 32 × 512 = 164M tokens trained (sub-epoch on 100K-doc subset)
+#   57K steps × 32 × 512 = 935M tokens trained — ~40 tokens/param, i.e. 2x
+#     Chinchilla-optimal (~467M for 23M params). TinyStories is ~470M tokens
+#     total, so this is ~2 epochs over the FULL corpus (no --max-docs cap).
+#     Overtraining a small model past Chinchilla buys real quality you keep
+#     at inference time; the lossplot callback writes loss_curve.png (train
+#     vs val) so you can see whether the 2nd epoch starts to overfit.
+#     NOTE: the old default trained 10K steps (164M tokens) on a 100K-doc
+#     (~22M-token) subset — that was ~7 repeated epochs of a tiny slice,
+#     undertrained and prone to memorizing. Use the full corpus instead.
 #
-# One-time data prep (~5-15 min depending on disk + HF cache):
+# One-time data prep (~20-40 min for the full corpus, depending on disk + HF cache):
 #   python scripts/data/download_corpus.py --source tiny_stories \
-#       --output data/tinystories/corpus.jsonl --max-docs 100000
+#       --output data/tinystories/corpus.jsonl          # full corpus (~2.1M stories, ~470M tokens)
 #   python scripts/data/train_tokenizer.py --corpus data/tinystories/corpus.jsonl --jsonl-key text \
 #       --output data/tinystories/tokenizer.json --vocab-size 8000
 #   python scripts/data/prepare_data.py --corpus data/tinystories/corpus.jsonl --jsonl-key text \
 #       --tokenizer data/tinystories/tokenizer.json --output data/tinystories/ --val-frac 0.01
 #
 # Then launch:
-#   python scripts/train/pretrain.py --config configs/pretrain_tinystories.yaml
+#   python scripts/train/train.py --config configs/pretrain_tinystories.yaml
 
 run_name: pretrain_tinystories
 output_dir: runs
@@ -63,7 +71,7 @@ optim:
   min_lr_ratio: 0.1
 
 trainer:
-  max_steps: 10000
+  max_steps: 57000           # ~40 tokens/param (2x Chinchilla); ~2 epochs over full TinyStories
   batch_size: 32
   grad_accum_steps: 1
   grad_clip: 1.0
@@ -105,3 +113,5 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_pretrain.txt next to checkpoints
     params:
       phase: pretrain
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

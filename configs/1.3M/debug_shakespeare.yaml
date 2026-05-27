@@ -1,6 +1,6 @@
 # Debug pretrain config — Tiny Shakespeare, debugger-friendly.
 #
-# Tuned for stepping through `scripts/train/pretrain.py` in VS Code:
+# Tuned for stepping through `scripts/train/train.py` in VS Code:
 #   - tiny model (~1M params), short seq_len, small vocab    -> fast forward/backward
 #   - precision: fp32                                        -> readable tensor values, no autocast surprises
 #   - num_workers: 0                                         -> single-process DataLoader, debugger can step in
@@ -15,7 +15,7 @@
 #       --tokenizer data/shakespeare/tokenizer.json --output data/shakespeare/ --val-frac 0.05
 #
 # Then launch:
-#   python scripts/train/pretrain.py --config configs/debug_shakespeare.yaml
+#   python scripts/train/train.py --config configs/debug_shakespeare.yaml
 
 run_name: debug_shakespeare
 output_dir: runs
@@ -93,3 +93,5 @@ callbacks:
       phase: pretrain
       # Default is 256, which overflows this config's 256-token context.
       max_new_tokens: 128
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

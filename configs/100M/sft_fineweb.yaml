@@ -17,7 +17,7 @@
 #            --output-dir data/alpaca
 #
 # Then launch:
-#   python scripts/train/sft.py --config configs/sft_fineweb.yaml \
+#   python scripts/train/train.py --config configs/sft_fineweb.yaml \
 #       --from-pretrained auto --pretrain-run-name pretrain_fineweb
 
 run_name: sft_fineweb
@@ -105,3 +105,5 @@ callbacks:
   - type: benchmark              # end-of-training, write benchmark_sft.txt next to checkpoints
     params:
       phase: sft
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

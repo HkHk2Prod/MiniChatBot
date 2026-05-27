@@ -100,9 +100,7 @@ class ConsoleCallback(Callback):
         for k, v in ctx.eval_metrics.items():
             if k == "elapsed_s":
                 parts.append(f"elapsed={_fmt_elapsed(v)}")
-            elif isinstance(v, bool) or not isinstance(v, (int, float)):
-                parts.append(f"{k}={v}")
-            elif isinstance(v, int):
+            elif isinstance(v, bool) or not isinstance(v, (int, float)) or isinstance(v, int):
                 parts.append(f"{k}={v}")
             else:
                 parts.append(f"{k}={v:.4f}")

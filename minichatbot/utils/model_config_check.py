@@ -121,7 +121,7 @@ def _fmt_table(
     headers: tuple[str, ...],
 ) -> list[str]:
     str_rows = [tuple(str(x) for x in r) for r in rows]
-    cols = list(zip(headers, *str_rows))
+    cols = list(zip(headers, *str_rows, strict=False))
     widths = [max(len(c) for c in col) for col in cols]
     fmt = "  ".join(f"{{:<{w}}}" for w in widths)
     out = [fmt.format(*headers)]

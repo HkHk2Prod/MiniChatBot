@@ -13,7 +13,7 @@
 #        python scripts/data/make_sft_smoketest_data.py
 #
 # Then launch:
-#   python scripts/train/sft.py --config configs/sft_smoketest.yaml --from-pretrained auto
+#   python scripts/train/train.py --config configs/sft_smoketest.yaml --from-pretrained auto
 
 run_name: sft_smoketest
 output_dir: runs
@@ -100,3 +100,5 @@ callbacks:
       # Default is 256, which overflows this smoketest's 256-token
       # context once the chat-rendered prompt is accounted for.
       max_new_tokens: 128
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

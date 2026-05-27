@@ -18,7 +18,7 @@
 #        python scripts/data/make_story_prompts.py
 #
 # Then launch:
-#   python scripts/train/rl.py --config configs/29M/rl_stories.yaml \
+#   python scripts/train/train.py --config configs/29M/rl_stories.yaml \
 #       --from-pretrained auto --pretrain-run-name sft_tinystories
 
 run_name: rl_stories
@@ -103,3 +103,5 @@ callbacks:
       # story so you can eyeball coherence vs. the variety number.
       prompts_file: benchmarks/prompts_stories.yaml
       max_new_tokens: 160
+
+  - type: lossplot             # end-of-training, write loss_curve.png (train vs val) next to checkpoints

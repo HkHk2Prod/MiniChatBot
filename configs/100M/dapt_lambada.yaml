@@ -1,0 +1,75 @@
+# DAPT-only branch for LAMBADA — continued next-token prediction on book
+# narrative (BookCorpusOpen), to improve LAMBADA last-word prediction. No DPO
+# stage: LAMBADA has no candidate choices, only a target final word, so the
+# lever is in-domain (book) language modeling. Forks from the base pretrain.
+#
+#   python scripts/data/download_corpus.py --source books --output data/books/corpus.jsonl --max-docs 20000
+#   python scripts/data/prepare_data.py --corpus data/books/corpus.jsonl --jsonl-key text \
+#       --tokenizer data/fineweb/tokenizer.json --output data/books/ --val-frac 0.01
+#   python scripts/train/train.py --config configs/100M/dapt_lambada.yaml \
+#       --from-pretrained auto --pretrain-run-name pretrain_fineweb
+
+run_name: dapt_lambada
+output_dir: runs
+seed: 42
+device: auto
+stage: dapt
+
+model:
+  type: transformer
+  vocab_size: 32000
+  max_seq_len: 1024
+  n_layers: 12
+  n_heads: 12
+  d_model: 768
+  d_ff: 2048            # match pretrain_fineweb checkpoint
+  dropout: 0.0
+  tie_embeddings: true
+  norm_type: rmsnorm
+
+tokenizer:
+  type: bpe
+  path: data/fineweb/tokenizer.json
+
+data:
+  type: pretrain
+  train_path: data/books/train.bin
+  val_path: data/books/val.bin
+  seq_len: 1024
+  num_workers: 4
+
+optim:
+  lr: 5.0e-5
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  warmup_steps: 50
+  lr_schedule: cosine
+  min_lr_ratio: 0.1
+
+trainer:
+  max_steps: 2000
+  batch_size: 8           # per-step micro-batch; batch 16 OOMs a 16GB 4080 (see pretrain_fineweb)
+  grad_accum_steps: 2     # effective batch 16, unchanged
+  grad_clip: 1.0
+  precision: bf16
+  compile: false
+
+callbacks:
+  - type: logfile
+  - type: console
+    params:
+      every: 50
+  - type: jsonl
+  - type: eval
+    params:
+      every: 250
+  - type: checkpoint
+    params:
+      every: 500
+      keep_last_k: 2
+  - type: lm_eval
+    params:
+      target_tasks: [lambada_openai]
+      other_tasks: [arc_easy, piqa, hellaswag, wikitext]
+      num_fewshot: 0

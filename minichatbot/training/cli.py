@@ -1,4 +1,4 @@
-"""Shared CLI helpers for training scripts (pretrain, sft, future RL)."""
+"""Shared CLI helpers + the unified training entrypoint (`train_main`)."""
 
 from __future__ import annotations
 
@@ -12,23 +12,23 @@ if TYPE_CHECKING:
     from minichatbot.config import Config
 
 
-def add_train_args(
-    parser: argparse.ArgumentParser,
-    *,
-    default_loss: str,
-    default_collator: str,
-    default_dataset: str,
-) -> None:
-    """Flags shared by all YAML-config trainers: config, registry keys,
-    --resume, --from-pretrained, --pretrain-run-name.
+def add_train_args(parser: argparse.ArgumentParser) -> None:
+    """Flags for the unified launcher: config, optional stage + registry-key
+    overrides, --resume, --from-pretrained, --pretrain-run-name.
 
-    Registry keys default to per-script values (e.g. "pretrain" or "sft");
-    override only when mixing components across stages.
+    `stage` defaults to `cfg.stage` (itself defaulting to `data.type`); the
+    dataset/collator/loss keys default to the runner's per-stage table. The
+    flags only override — needed when mixing components across stages.
     """
     parser.add_argument("--config", required=True, help="Path to YAML config.")
-    parser.add_argument("--loss", default=default_loss, help="LOSS_REGISTRY key.")
-    parser.add_argument("--collator", default=default_collator, help="COLLATOR_REGISTRY key.")
-    parser.add_argument("--dataset", default=default_dataset, help="DATASET_REGISTRY key.")
+    parser.add_argument(
+        "--stage",
+        default=None,
+        help="Override cfg.stage (pretrain | sft | rl | ...). Default: from config.",
+    )
+    parser.add_argument("--loss", default=None, help="Override LOSS_REGISTRY key.")
+    parser.add_argument("--collator", default=None, help="Override COLLATOR_REGISTRY key.")
+    parser.add_argument("--dataset", default=None, help="Override DATASET_REGISTRY key.")
     parser.add_argument(
         "--resume",
         default=None,
@@ -76,3 +76,35 @@ def resolve_train_ckpts(
     )
     resume_ckpt = resolve_resume_arg(args.resume, cfg) if args.resume else None
     return pretrained_ckpt, resume_ckpt
+
+
+def train_main(argv: list[str] | None = None) -> None:
+    """Unified training entrypoint. Parses args, loads the config, applies any
+    CLI overrides (stage / dataset / collator / loss), resolves the
+    checkpoint args, and hands off to the config-driven runner.
+
+    Imports are local so importing this module for arg parsing alone stays
+    cheap (the runner pulls in torch + the whole builder stack).
+    """
+    from minichatbot.config import load_config
+    from minichatbot.training.runner import build_and_train
+
+    parser = argparse.ArgumentParser(
+        description="Train MiniChatBot — the stage comes from the config."
+    )
+    add_train_args(parser)
+    args = parser.parse_args(argv)
+
+    cfg = load_config(args.config)
+    # CLI overrides win over the config's declared stage/component keys.
+    if args.stage:
+        cfg.stage = args.stage
+    if args.dataset:
+        cfg.dataset = args.dataset
+    if args.collator:
+        cfg.collator = args.collator
+    if args.loss:
+        cfg.loss = args.loss
+
+    pretrained_ckpt, resume_ckpt = resolve_train_ckpts(args, cfg)
+    build_and_train(cfg, pretrained_ckpt=pretrained_ckpt, resume_ckpt=resume_ckpt)

@@ -12,6 +12,7 @@ prints in `on_train_start`.
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from pathlib import Path
 from typing import IO, Any
@@ -28,18 +29,14 @@ class _Tee:
 
     def write(self, data: str) -> int:
         for s in self._streams:
-            try:
+            with contextlib.suppress(Exception):
                 s.write(data)
-            except Exception:
-                pass
         return len(data)
 
     def flush(self) -> None:
         for s in self._streams:
-            try:
+            with contextlib.suppress(Exception):
                 s.flush()
-            except Exception:
-                pass
 
     def isatty(self) -> bool:
         return False

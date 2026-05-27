@@ -37,7 +37,7 @@ from tqdm import tqdm
 RowToQA = Callable[[dict], "tuple[str, str] | None"]
 
 
-def _gsm8k_to_qa(row: dict) -> "tuple[str, str] | None":
+def _gsm8k_to_qa(row: dict) -> tuple[str, str] | None:
     question = (row.get("question") or "").strip()
     answer = (row.get("answer") or "").strip()
     if not question or not answer or "####" not in answer:
@@ -52,9 +52,15 @@ SOURCES: dict[str, tuple[str, str | None, dict[str, str], RowToQA]] = {
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Download an RL prompt set to {question,answer} JSONL.")
-    parser.add_argument("--source", required=True, choices=sorted(SOURCES.keys()), help="RL source key.")
-    parser.add_argument("--output-dir", required=True, help="Directory for the per-split .jsonl files.")
+    parser = argparse.ArgumentParser(
+        description="Download an RL prompt set to {question,answer} JSONL."
+    )
+    parser.add_argument(
+        "--source", required=True, choices=sorted(SOURCES.keys()), help="RL source key."
+    )
+    parser.add_argument(
+        "--output-dir", required=True, help="Directory for the per-split .jsonl files."
+    )
     parser.add_argument(
         "--max-rows",
         type=int,
@@ -109,7 +115,8 @@ def main() -> None:
     print(
         f"\nNext step: point your RL config's data.train_path at\n"
         f"  {out_dir / 'train.jsonl'}\n"
-        f"then run scripts/train/rl.py --config configs/100M/rl_gsm8k.yaml --from-pretrained auto"
+        f"then run scripts/train/train.py --config configs/100M/rl_gsm8k.yaml"
+        f" --from-pretrained auto"
     )
 
 

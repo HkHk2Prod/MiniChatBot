@@ -9,7 +9,8 @@ Examples:
 
     # First real run (~2GB; --max-docs caps it for testing)
     python scripts/data/download_corpus.py --source tiny_stories --output data/tinystories.jsonl
-    python scripts/data/download_corpus.py --source tiny_stories --output data/tinystories_small.jsonl --max-docs 100000
+    python scripts/data/download_corpus.py --source tiny_stories \\
+        --output data/tinystories_small.jsonl --max-docs 100000
 
     # Big-model territory (TBs)
     python scripts/data/download_corpus.py --source fineweb_edu --output data/fineweb.jsonl \\

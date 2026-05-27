@@ -59,4 +59,7 @@ class HFDatasetSource(CorpusSource):
     def __repr__(self) -> str:
         config = f", config={self.config_name!r}" if self.config_name else ""
         cap = f", max_docs={self.max_docs}" if self.max_docs is not None else ""
-        return f"{type(self).__name__}(dataset={self.dataset_name!r}, split={self.split!r}{config}{cap})"
+        return (
+            f"{type(self).__name__}(dataset={self.dataset_name!r}, "
+            f"split={self.split!r}{config}{cap})"
+        )

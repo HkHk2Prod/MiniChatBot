@@ -41,7 +41,6 @@ from minichatbot.rl.rewards.base import Reward
 from minichatbot.rl.rewards.gsm8k import GSM8KReward
 from minichatbot.tokenizer.base import Tokenizer
 
-
 PHASES = ("pretrain", "sft", "rl")
 GROUPS = ("near", "generalize", "ood")
 GROUP_HEADERS: dict[str, str] = {

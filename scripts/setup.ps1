@@ -1,40 +1,39 @@
 <#
 .SYNOPSIS
-    Initialize a CUDA-enabled venv for MiniChatBot.
+    Initialize a virtual environment for MiniChatBot using uv.
 
 .DESCRIPTION
-    Creates .venv (if missing), installs torch from PyTorch's CUDA index,
-    then installs the project in editable mode with dev + tensorboard
-    extras. Run from the project root.
+    Creates .venv with `uv venv` (if missing) and installs the project in
+    editable mode with dev + tensorboard + data extras. torch is fetched via
+    uv's --torch-backend, which auto-detects your CUDA driver by default and
+    falls back to a CPU wheel when no NVIDIA GPU is present. Run from the
+    project root. Requires uv: https://docs.astral.sh/uv/
 
-    CUDA is the default. Pass -Cpu to install the CPU-only wheel.
-
-.PARAMETER Cuda
-    CUDA wheel index suffix (cu118, cu121, cu124, cu126, cu128). Default: cu126.
+.PARAMETER TorchBackend
+    torch backend: auto (default), cpu, cu118, cu121, cu124, cu126, cu128.
 
 .PARAMETER Cpu
-    Install CPU-only torch instead of CUDA.
+    Shortcut for -TorchBackend cpu.
 
 .PARAMETER NoExtras
-    Skip the [dev,tensorboard] extras.
+    Skip the [dev,tensorboard,data] extras.
 
 .PARAMETER Force
-    Force-reinstall torch. Use this when migrating an existing venv from
-    CPU torch to CUDA (or vice versa) without re-creating the venv.
+    Reinstall torch (e.g. switching CPU<->CUDA wheels).
 
 .PARAMETER Python
-    Python executable used to create the venv. Default: "python".
+    Python version or interpreter for the venv. Default: "python".
 
 .EXAMPLE
-    .\scripts\setup.ps1                    # default: CUDA cu126, full install
-    .\scripts\setup.ps1 -Cuda cu128        # override CUDA version
-    .\scripts\setup.ps1 -Cpu               # CPU-only fallback
-    .\scripts\setup.ps1 -Force             # swap existing CPU wheel for CUDA
+    .\scripts\setup.ps1                          # auto-detect backend, full extras
+    .\scripts\setup.ps1 -TorchBackend cu128      # force a CUDA build
+    .\scripts\setup.ps1 -Cpu                     # CPU-only wheel
+    .\scripts\setup.ps1 -Force                   # reinstall torch
 #>
 
 [CmdletBinding()]
 param(
-    [string]$Cuda = "cu126",
+    [string]$TorchBackend = "auto",
     [switch]$Cpu,
     [switch]$NoExtras,
     [switch]$Force,
@@ -48,29 +47,23 @@ if (-not (Test-Path "pyproject.toml")) {
     exit 1
 }
 
-if (-not (Test-Path ".venv")) {
-    Write-Host "Creating .venv with $Python ..."
-    & $Python -m venv .venv
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    Write-Error "uv not found. Install it, then re-run: https://docs.astral.sh/uv/getting-started/installation/`n  powershell -c `"irm https://astral.sh/uv/install.ps1 | iex`""
+    exit 1
 }
 
+$backend = if ($Cpu) { "cpu" } else { $TorchBackend }
 $pyExe = ".\.venv\Scripts\python.exe"
-& $pyExe -m pip install --upgrade pip --quiet
 
-$pipFlags = @("--quiet")
-if ($Force) { $pipFlags += "--force-reinstall" }
+Write-Host "Creating .venv (python: $Python) ..."
+& uv venv --seed --python $Python .venv
 
-if ($Cpu) {
-    Write-Host "Installing torch (CPU) ..."
-    & $pyExe -m pip install torch @pipFlags
-} else {
-    $indexUrl = "https://download.pytorch.org/whl/$Cuda"
-    Write-Host "Installing torch from $indexUrl ..."
-    & $pyExe -m pip install torch --index-url $indexUrl @pipFlags
-}
+$pipFlags = @()
+if ($Force) { $pipFlags += @("--reinstall-package", "torch") }
 
 $target = if ($NoExtras) { "." } else { ".[dev,tensorboard,data]" }
-Write-Host "Installing project (editable) from $target ..."
-& $pyExe -m pip install -e $target --quiet
+Write-Host "Installing project (editable) from $target with torch backend '$backend' ..."
+& uv pip install --python $pyExe --torch-backend=$backend -e $target @pipFlags
 
 Write-Host "`n--- Verification ---"
-& $pyExe -c "import torch; print(f'torch: {torch.__version__}'); cuda = torch.cuda.is_available(); print(f'cuda.is_available: {cuda}'); print(f'device: {torch.cuda.get_device_name(0) if cuda else \"cpu\"}')"
+& $pyExe -c "import torch; print('torch:', torch.__version__); c = torch.cuda.is_available(); print('cuda.is_available:', c); print('device:', torch.cuda.get_device_name(0) if c else 'cpu')"

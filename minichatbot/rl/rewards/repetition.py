@@ -47,7 +47,7 @@ def _distinct_ratio(tokens: list[str], n: int) -> float:
     """
     if len(tokens) < n + 1:
         return 1.0
-    ngrams = list(zip(*(tokens[i:] for i in range(n))))
+    ngrams = list(zip(*(tokens[i:] for i in range(n)), strict=False))
     return len(set(ngrams)) / len(ngrams)
 
 

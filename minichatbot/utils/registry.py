@@ -15,8 +15,8 @@ an explicit list of imports.
 from __future__ import annotations
 
 import pkgutil
-from collections.abc import Iterable
-from typing import Callable, Generic, TypeVar
+from collections.abc import Callable, Iterable
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 

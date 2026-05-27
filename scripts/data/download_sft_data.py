@@ -163,7 +163,7 @@ def main() -> None:
         f"\nNext step: point your SFT config's data.train_path / data.val_path at\n"
         f"  {out_dir / 'train.jsonl'}\n"
         f"  {out_dir / 'val.jsonl'}\n"
-        f"then run scripts/train/sft.py."
+        f"then run scripts/train/train.py."
     )
 
 
