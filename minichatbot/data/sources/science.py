@@ -42,7 +42,11 @@ class ScienceSource(CorpusSource):
                 'Install with: pip install -e ".[data]"'
             ) from e
 
-        ds = load_dataset("sciq", split=self.split, streaming=True, cache_dir=self.cache_dir)
+        # Fully-qualified id: newer huggingface_hub rejects the bare canonical
+        # name "sciq" ("Repository id must be 'namespace/name'").
+        ds = load_dataset(
+            "allenai/sciq", split=self.split, streaming=True, cache_dir=self.cache_dir
+        )
         n = 0
         for row in ds:
             if self.max_docs is not None and n >= self.max_docs:
@@ -62,4 +66,4 @@ class ScienceSource(CorpusSource):
 
     def __repr__(self) -> str:
         cap = f", max_docs={self.max_docs}" if self.max_docs is not None else ""
-        return f"ScienceSource(dataset='sciq', split={self.split!r}{cap})"
+        return f"ScienceSource(dataset='allenai/sciq', split={self.split!r}{cap})"
