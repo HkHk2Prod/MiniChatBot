@@ -56,6 +56,7 @@ trainer:
   grad_clip: 1.0
   precision: bf16
   compile: false
+  grad_checkpointing: true   # frees policy block activations; per-step batch stays small (vocab-logits dominate DPO memory)
 
 callbacks:
   - type: logfile

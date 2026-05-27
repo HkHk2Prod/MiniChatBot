@@ -54,11 +54,12 @@ optim:
 
 trainer:
   max_steps: 2000
-  batch_size: 8           # per-step micro-batch; batch 16 OOMs a 16GB 4080 (see pretrain_fineweb)
-  grad_accum_steps: 2     # effective batch 16, unchanged
+  batch_size: 16          # fits a 16GB 4080 now that grad_checkpointing frees block activations
+  grad_accum_steps: 1     # effective batch 16, unchanged
   grad_clip: 1.0
   precision: bf16
   compile: false
+  grad_checkpointing: true   # recompute block activations in backward: large memory cut, ~20-30% slower
 
 callbacks:
   - type: logfile
