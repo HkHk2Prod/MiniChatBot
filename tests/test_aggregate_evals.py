@@ -5,6 +5,7 @@ Pure data logic — exercised with hand-built RunEvals, no run dirs or torch.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from aggregate_evals import (  # noqa: E402
     _stamped,
     build_improvements,
     build_pipelines,
+    load_run,
     render_improvements_md,
     render_markdown,
 )
@@ -115,6 +117,40 @@ def test_shows_value_at_every_stage_including_sft_rl() -> None:
     header = next(ln for ln in render_improvements_md(runs) if ln.startswith("| pipeline"))
     for stage in ("pretrain", "sft", "rl"):
         assert stage in header
+
+
+def test_load_run_infers_stage_from_name_when_absent(tmp_path: Path) -> None:
+    # A standalone eval JSON has no "stage"; it should be read off the run-name
+    # prefix so the run isn't left unlabeled ("?").
+    d = tmp_path / "20260520_000000_pretrain_fineweb"
+    d.mkdir()
+    (d / "lm_eval_x.json").write_text(
+        json.dumps({"results": {"piqa": {"acc,none": 0.6}}}), encoding="utf-8"
+    )
+    run = load_run(d)
+    assert run is not None and run.stage == "pretrain"
+
+    # An unrecognized prefix stays unlabeled rather than guessing.
+    d2 = tmp_path / "20260520_000000_debug_shakespeare"
+    d2.mkdir()
+    (d2 / "lm_eval_x.json").write_text(
+        json.dumps({"results": {"piqa": {"acc,none": 0.6}}}), encoding="utf-8"
+    )
+    assert load_run(d2).stage is None
+
+
+def test_base_pinned_first_even_with_unknown_stage() -> None:
+    # A baseline whose stage can't be resolved (stage="") must still lead the
+    # chain, not sort to the end and invert the delta.
+    runs = [
+        _run("eval_dump", "20260520_000000", "", {"piqa": {"acc": 0.40}}),  # base, no stage
+        _run("dpo_piqa", "20260521_000000", "dpo", {"piqa": {"acc": 0.55}}, targets={"piqa"}),
+    ]
+    (_task, chain) = build_pipelines(runs)[0]
+    assert [r.run_name for r in chain] == ["eval_dump", "dpo_piqa"]  # base first
+    (imp,) = build_improvements(runs)
+    assert imp.stages == [("?", 0.40), ("dpo", 0.55)]
+    assert imp.delta > 0 and imp.improved is True  # base -> dpo, not the inverse
 
 
 def test_scores_drops_bookkeeping_fields() -> None:

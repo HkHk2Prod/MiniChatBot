@@ -97,6 +97,13 @@ def load_run(run_path: Path) -> RunEvals | None:
             run.metrics.setdefault(task, {}).update(scores)
             if split == "target":
                 run.target_tasks.add(task)
+    # Standalone evals (eval_harness.py) write no "stage"; fall back to the
+    # run-name prefix (pretrain_fineweb -> pretrain) when it names a known stage,
+    # so such runs still land in the right pipeline column instead of "?".
+    if run.stage is None:
+        prefix = run.run_name.split("_", 1)[0].lower()
+        if prefix in _STAGE_RANK:
+            run.stage = prefix
     return run if run.metrics else None
 
 
@@ -181,6 +188,10 @@ def build_pipelines(runs: list[RunEvals]) -> list[tuple[str, list[RunEvals]]]:
     A stage declares its target task(s) through the in-training lm-eval callback
     (the ``split="target"`` file); the base is the pretrain those stages forked
     from. Standalone evals carry no stage/target, so they form no pipelines.
+
+    The base leads the chain unconditionally — a base whose stage can't be
+    resolved (sorts last by rank) must not be mistaken for the final stage,
+    which would invert every delta. Only the targeted stages are rank-sorted.
     Returns ``[(task, [base, ...stages]), ...]`` sorted by task name.
     """
     base = next((r for r in runs if (r.stage or "").lower() == "pretrain"), None)
@@ -189,10 +200,9 @@ def build_pipelines(runs: list[RunEvals]) -> list[tuple[str, list[RunEvals]]]:
     targets = sorted({t for r in runs for t in r.target_tasks})
     pipelines: list[tuple[str, list[RunEvals]]] = []
     for task in targets:
-        chain = [r for r in runs if task in r.target_tasks]
-        if base is not None and base not in chain:
-            chain = [base, *chain]
-        chain.sort(key=lambda r: (_stage_rank(r.stage), r.timestamp, r.run_dir))
+        stages = [r for r in runs if task in r.target_tasks]
+        stages.sort(key=lambda r: (_stage_rank(r.stage), r.timestamp, r.run_dir))
+        chain = [base, *stages] if base is not None and base not in stages else stages
         pipelines.append((task, chain))
     return pipelines
 
