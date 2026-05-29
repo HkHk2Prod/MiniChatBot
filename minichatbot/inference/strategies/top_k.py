@@ -22,5 +22,5 @@ class TopKSampling(SamplingStrategy):
         k = min(self.k, logits.size(-1))
         topk_vals, topk_idx = logits.topk(k, dim=-1)
         probs = torch.softmax(topk_vals / self.temperature, dim=-1)
-        choice = torch.multinomial(probs, num_samples=1)        # (B, 1)
-        return topk_idx.gather(-1, choice).squeeze(-1)          # (B,)
+        choice = torch.multinomial(probs, num_samples=1)  # (B, 1)
+        return topk_idx.gather(-1, choice).squeeze(-1)  # (B,)

@@ -122,7 +122,7 @@ def _generate_chat(
         ids = _render_chat_prompt_ids(prompt, system, tokenizer)
         input_ids = torch.tensor([ids], dtype=torch.long, device=device)
         out = generator.generate(model, input_ids, max_new_tokens=max_new_tokens)
-        completion_ids = out[0].tolist()[len(ids):]
+        completion_ids = out[0].tolist()[len(ids) :]
         completions.append(tokenizer.decode(completion_ids, include_special=False))
     return completions
 
@@ -240,8 +240,12 @@ def run_benchmark(
 
             elif phase == "sft":
                 completions = _generate_chat(
-                    model=model, tokenizer=tokenizer, generator=generator,
-                    device=device, prompts=list(items), system=system,
+                    model=model,
+                    tokenizer=tokenizer,
+                    generator=generator,
+                    device=device,
+                    prompts=list(items),
+                    system=system,
                     max_new_tokens=max_new_tokens,
                 )
                 for prompt, completion in zip(items, completions, strict=True):
@@ -254,8 +258,12 @@ def run_benchmark(
                     prompts_s = [it["prompt"] for it in items]
                     references = [str(it["reference"]) for it in items]
                     completions = _generate_chat(
-                        model=model, tokenizer=tokenizer, generator=generator,
-                        device=device, prompts=prompts_s, system=system,
+                        model=model,
+                        tokenizer=tokenizer,
+                        generator=generator,
+                        device=device,
+                        prompts=prompts_s,
+                        system=system,
                         max_new_tokens=max_new_tokens,
                     )
                     scores: list[float] = []
@@ -265,14 +273,16 @@ def run_benchmark(
                         score = float(reward(completion, ref))  # type: ignore[misc]
                         pred = reward.format_prediction(completion)  # type: ignore[union-attr]
                         scores.append(score)
-                        _emit_scored(
-                            fh, prompt, ref, completion, score, pred, verbose=verbose
-                        )
+                        _emit_scored(fh, prompt, ref, completion, score, pred, verbose=verbose)
                     rl_scores_by_group[group] = scores
                 else:
                     completions = _generate_chat(
-                        model=model, tokenizer=tokenizer, generator=generator,
-                        device=device, prompts=list(items), system=system,
+                        model=model,
+                        tokenizer=tokenizer,
+                        generator=generator,
+                        device=device,
+                        prompts=list(items),
+                        system=system,
                         max_new_tokens=max_new_tokens,
                     )
                     for prompt, completion in zip(items, completions, strict=True):
@@ -286,9 +296,7 @@ def run_benchmark(
                     continue
                 scores = rl_scores_by_group[group]
                 rate = sum(scores) / len(scores) if scores else 0.0
-                summary_lines.append(
-                    f"  {group:<11} {metric} {rate:.2%}  (n={len(scores)})"
-                )
+                summary_lines.append(f"  {group:<11} {metric} {rate:.2%}  (n={len(scores)})")
             summary = "\n".join(summary_lines) + "\n"
             fh.write(summary)
             if verbose:

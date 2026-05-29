@@ -54,8 +54,8 @@ def sequence_logp(
         if c <= 0:
             out.append(logits.new_zeros(()))
             continue
-        targets = input_ids[r, length - c : length]              # (c,)
-        pred = logits[r, length - c - 1 : length - 1].float()    # (c, V)
+        targets = input_ids[r, length - c : length]  # (c,)
+        pred = logits[r, length - c - 1 : length - 1].float()  # (c, V)
         tok_lp = pred.log_softmax(dim=-1).gather(-1, targets.unsqueeze(-1)).squeeze(-1)
         out.append(tok_lp.sum())
     return torch.stack(out)

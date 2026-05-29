@@ -23,9 +23,7 @@ class Tokenizer(ABC):
     def decode(self, ids: list[int], include_special: bool = False) -> str: ...
 
     @abstractmethod
-    def encode_batch(
-        self, texts: list[str], include_special: bool = True
-    ) -> list[list[int]]: ...
+    def encode_batch(self, texts: list[str], include_special: bool = True) -> list[list[int]]: ...
 
     @property
     @abstractmethod

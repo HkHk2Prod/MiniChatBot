@@ -74,8 +74,7 @@ def score_batch(
     A degenerate empty continuation (n_cont == 0) scores `(0.0, True)`.
     """
     prepared = [
-        _prepare(ctx, cont, max_length=max_length, prefix_id=prefix_id)
-        for ctx, cont in batch
+        _prepare(ctx, cont, max_length=max_length, prefix_id=prefix_id) for ctx, cont in batch
     ]
     max_t = max(len(inp) for inp, _ in prepared)
     bsz = len(prepared)
@@ -97,8 +96,8 @@ def score_batch(
         length = len(inp)
         # Continuation occupies inp[length - n_cont : length]; token at
         # position p is predicted by the logits at position p - 1.
-        targets = input_ids[i, length - n_cont : length]              # (n_cont,)
-        pred = log_probs[i, length - n_cont - 1 : length - 1]          # (n_cont, V)
+        targets = input_ids[i, length - n_cont : length]  # (n_cont,)
+        pred = log_probs[i, length - n_cont - 1 : length - 1]  # (n_cont, V)
         token_lp = pred.gather(-1, targets.unsqueeze(-1)).squeeze(-1)  # (n_cont,)
         is_greedy = bool((pred.argmax(dim=-1) == targets).all().item())
         results.append((float(token_lp.sum().item()), is_greedy))

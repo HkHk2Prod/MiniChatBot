@@ -116,6 +116,5 @@ class CheckpointCallback(Callback):
             )
         else:
             print(
-                "[checkpoint] no best model tracked "
-                "(no val loader, or eval never produced metrics)"
+                "[checkpoint] no best model tracked (no val loader, or eval never produced metrics)"
             )

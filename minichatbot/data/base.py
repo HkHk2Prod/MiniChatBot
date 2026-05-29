@@ -45,6 +45,4 @@ class BaseDataset(Dataset[Any], ABC):
 
             target_cls = DATASET_REGISTRY[cfg.type]
             return target_cls.from_config(cfg, tokenizer, split)
-        raise NotImplementedError(
-            f"{cls.__name__} must override from_config"
-        )
+        raise NotImplementedError(f"{cls.__name__} must override from_config")

@@ -34,9 +34,7 @@ class Transformer(LanguageModel):
         self.grad_checkpointing = False
 
         self.tok_embed = nn.Embedding(cfg.vocab_size, cfg.d_model)
-        self.embed_dropout = (
-            nn.Dropout(cfg.dropout) if cfg.dropout > 0 else nn.Identity()
-        )
+        self.embed_dropout = nn.Dropout(cfg.dropout) if cfg.dropout > 0 else nn.Identity()
         self.blocks = nn.ModuleList(
             [
                 TransformerBlock(
@@ -72,17 +70,11 @@ class Transformer(LanguageModel):
     def set_gradient_checkpointing(self, enabled: bool) -> None:
         self.grad_checkpointing = enabled
 
-    def init_state(
-        self, batch_size: int, device: torch.device
-    ) -> TransformerState:
+    def init_state(self, batch_size: int, device: torch.device) -> TransformerState:
         return [
             KVCache(
-                k=torch.empty(
-                    batch_size, self.n_heads, 0, self.head_dim, device=device
-                ),
-                v=torch.empty(
-                    batch_size, self.n_heads, 0, self.head_dim, device=device
-                ),
+                k=torch.empty(batch_size, self.n_heads, 0, self.head_dim, device=device),
+                v=torch.empty(batch_size, self.n_heads, 0, self.head_dim, device=device),
             )
             for _ in range(self.n_layers)
         ]
@@ -96,16 +88,13 @@ class Transformer(LanguageModel):
         pos_start = state[0].k.size(2) if state is not None else 0
         if pos_start + T > self.cfg.max_seq_len:
             raise ValueError(
-                f"sequence length {pos_start + T} exceeds "
-                f"max_seq_len={self.cfg.max_seq_len}"
+                f"sequence length {pos_start + T} exceeds max_seq_len={self.cfg.max_seq_len}"
             )
 
         x = self.tok_embed(input_ids)
         x = self.embed_dropout(x)
 
-        new_state: TransformerState | None = (
-            list(state) if state is not None else None
-        )
+        new_state: TransformerState | None = list(state) if state is not None else None
         # Checkpoint only when building a backward graph (training step) and not
         # decoding with a KV cache — recompute on eval/decode would waste work
         # and the cache path returns a non-checkpointable state object.
@@ -113,7 +102,7 @@ class Transformer(LanguageModel):
         for i, block in enumerate(self.blocks):
             cache = state[i] if state is not None else None
             if use_ckpt:
-                x, new_cache = checkpoint(
+                x, new_cache = checkpoint(  # type: ignore[misc]
                     block, x, self.rope_cos, self.rope_sin, cache, use_reentrant=False
                 )
             else:

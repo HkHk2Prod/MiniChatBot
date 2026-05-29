@@ -107,8 +107,11 @@ class MCDataset(BaseDataset):
                 ok = True
                 for choice in choices:
                     inp, n_cont, chars = encode_continuation(
-                        self.tokenizer, context, choice,
-                        seq_len=self.seq_len, prefix_id=self.prefix_id,
+                        self.tokenizer,
+                        context,
+                        choice,
+                        seq_len=self.seq_len,
+                        prefix_id=self.prefix_id,
                     )
                     if n_cont == 0:
                         ok = False
@@ -127,8 +130,7 @@ class MCDataset(BaseDataset):
             )
         if not self.examples:
             raise ValueError(
-                f"MCDataset: no usable examples in {self.path} "
-                f"(checked {n_total} lines)."
+                f"MCDataset: no usable examples in {self.path} (checked {n_total} lines)."
             )
 
     def __len__(self) -> int:
@@ -155,8 +157,7 @@ class MCDataset(BaseDataset):
         elif split == "val":
             if cfg.val_path is None:
                 raise ValueError(
-                    "MCDataset.from_config(split='val') requires "
-                    "DataConfig.val_path to be set."
+                    "MCDataset.from_config(split='val') requires DataConfig.val_path to be set."
                 )
             path = cfg.val_path
         else:

@@ -35,16 +35,18 @@ from minichatbot.config import ModelConfig
 #   with persistent=False, so they're not in state_dict and won't trigger
 #   load failures.
 # - `dropout` is runtime-only (no weights), so it never affects loading.
-_SHAPE_FIELDS: frozenset[str] = frozenset({
-    "type",
-    "vocab_size",
-    "n_layers",
-    "n_heads",
-    "d_model",
-    "d_ff",
-    "tie_embeddings",
-    "norm_type",
-})
+_SHAPE_FIELDS: frozenset[str] = frozenset(
+    {
+        "type",
+        "vocab_size",
+        "n_layers",
+        "n_heads",
+        "d_model",
+        "d_ff",
+        "tie_embeddings",
+        "norm_type",
+    }
+)
 
 
 def parse_ckpt_model_config(raw: dict[str, object]) -> ModelConfig:
@@ -140,16 +142,20 @@ def _fatal_banner(diffs: list[tuple[str, object, object]]) -> str:
         "size mismatches; aborting now with a clearer message instead.",
         "",
     ]
-    lines.extend(_fmt_table(
-        rows=[(n, repr(y), repr(c)) for n, y, c in diffs],
-        headers=("field", "YAML", "checkpoint"),
-    ))
-    lines.extend([
-        "",
-        "Fix one of:",
-        "  - Align the YAML's model: block with the checkpoint's saved arch",
-        "  - Pick a checkpoint trained with this YAML's architecture",
-    ])
+    lines.extend(
+        _fmt_table(
+            rows=[(n, repr(y), repr(c)) for n, y, c in diffs],
+            headers=("field", "YAML", "checkpoint"),
+        )
+    )
+    lines.extend(
+        [
+            "",
+            "Fix one of:",
+            "  - Align the YAML's model: block with the checkpoint's saved arch",
+            "  - Pick a checkpoint trained with this YAML's architecture",
+        ]
+    )
     return _banner(lines)
 
 
@@ -162,10 +168,12 @@ def _resume_override_banner(diffs: list[tuple[str, object, object]]) -> str:
         "authoritative — building the model with the checkpoint's values:",
         "",
     ]
-    lines.extend(_fmt_table(
-        rows=[(n, repr(y), repr(c)) for n, y, c in diffs],
-        headers=("field", "YAML (ignored)", "checkpoint (used)"),
-    ))
+    lines.extend(
+        _fmt_table(
+            rows=[(n, repr(y), repr(c)) for n, y, c in diffs],
+            headers=("field", "YAML (ignored)", "checkpoint (used)"),
+        )
+    )
     return _banner(lines)
 
 
@@ -177,8 +185,10 @@ def _behavioral_diff_banner(diffs: list[tuple[str, object, object]]) -> str:
         "with YAML values — the checkpoint's values are shown for reference:",
         "",
     ]
-    lines.extend(_fmt_table(
-        rows=[(n, repr(y), repr(c)) for n, y, c in diffs],
-        headers=("field", "YAML (used)", "checkpoint"),
-    ))
+    lines.extend(
+        _fmt_table(
+            rows=[(n, repr(y), repr(c)) for n, y, c in diffs],
+            headers=("field", "YAML (used)", "checkpoint"),
+        )
+    )
     return _banner(lines)

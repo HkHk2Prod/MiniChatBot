@@ -46,9 +46,9 @@ class RolloutResult:
     batch: dict[str, torch.Tensor]
     reward_mean: float
     reward_std: float
-    solve_rate: float          # fraction of sampled completions with reward > 0
-    gen_len_mean: float        # mean completion length in tokens
-    n_samples: int             # B = n_prompts * group_size
+    solve_rate: float  # fraction of sampled completions with reward > 0
+    gen_len_mean: float  # mean completion length in tokens
+    n_samples: int  # B = n_prompts * group_size
 
 
 @torch.no_grad()
@@ -92,7 +92,7 @@ def collect_rollouts(
             # to emit it).
             if chat_end_id in completion:
                 completion = completion[: completion.index(chat_end_id) + 1]
-            if not completion:                      # model produced nothing
+            if not completion:  # model produced nothing
                 completion = [chat_end_id]
             text = tokenizer.decode(completion, include_special=False)
             group_rewards.append(float(reward_fn(text, reference)))
@@ -124,7 +124,7 @@ def collect_rollouts(
     # Diagnostics for logging (not used by the loss).
     reward_t = torch.tensor(rewards, dtype=torch.float32)
     gen_lens = [len(seq) - tp for seq, tp in zip(seqs, prompt_lens, strict=True)]
-    
+
     return RolloutResult(
         batch={
             "input_ids": input_ids.to(device),

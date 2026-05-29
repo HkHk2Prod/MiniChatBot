@@ -105,9 +105,7 @@ class Trainer:
         self.dtype = _resolve_dtype(config.precision)
         self.use_autocast = config.precision != "fp32"
         self.scaler: GradScaler | None = (
-            GradScaler("cuda")
-            if config.precision == "fp16" and device.type == "cuda"
-            else None
+            GradScaler("cuda") if config.precision == "fp16" and device.type == "cuda" else None
         )
 
         # Tracks the most recently completed training step. Persisted by
@@ -227,9 +225,7 @@ class Trainer:
 
         def _micro(it: Iterator[Any]) -> tuple[dict[str, torch.Tensor], dict[str, float]]:
             batch = next(it)
-            batch = {
-                k: v.to(self.device, non_blocking=True) for k, v in batch.items()
-            }
+            batch = {k: v.to(self.device, non_blocking=True) for k, v in batch.items()}
             return batch, {}
 
         batch = self._run_accum_step(ctx, train_iter, _micro)
@@ -309,9 +305,7 @@ class Trainer:
         grad_norm: float | None = None
         if self.config.grad_clip is not None:
             grad_norm = float(
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), self.config.grad_clip
-                )
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.grad_clip)
             )
         # When fp16 grads are inf/nan, scaler.step() skips the optimizer
         # update and scaler.update() reduces the scale. Advancing the
@@ -345,9 +339,7 @@ class Trainer:
         # Teardown events fire in reverse order (LIFO) so resources opened
         # by earlier callbacks (e.g., LogFileCallback's stdout tee) outlive
         # later callbacks' final prints.
-        callbacks = (
-            reversed(self.callbacks) if event == "on_train_end" else self.callbacks
-        )
+        callbacks = reversed(self.callbacks) if event == "on_train_end" else self.callbacks
         for cb in callbacks:
             getattr(cb, event)(ctx)
 

@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import TypeVar
 
 import torch
 import torch.nn as nn
+
+ModuleT = TypeVar("ModuleT", bound=nn.Module)
 
 
 def resolve_device(device: str) -> torch.device:
@@ -19,7 +22,7 @@ def resolve_device(device: str) -> torch.device:
     return torch.device(device)
 
 
-def unwrap_compiled(model: nn.Module) -> nn.Module:
+def unwrap_compiled(model: ModuleT) -> ModuleT:
     """Return the original module if `model` was wrapped by `torch.compile`.
 
     `torch.compile` returns an `OptimizedModule` that registers the wrapped

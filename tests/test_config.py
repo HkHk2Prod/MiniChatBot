@@ -100,9 +100,7 @@ _INVALID_MUTATIONS: dict[str, Callable[[dict[str, Any]], None]] = {
 }
 
 
-@pytest.mark.parametrize(
-    "mutate", _INVALID_MUTATIONS.values(), ids=list(_INVALID_MUTATIONS.keys())
-)
+@pytest.mark.parametrize("mutate", _INVALID_MUTATIONS.values(), ids=list(_INVALID_MUTATIONS.keys()))
 def test_validate_rejects_bad_constraints(
     tmp_path: Path, mutate: Callable[[dict[str, Any]], None]
 ) -> None:

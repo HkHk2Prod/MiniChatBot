@@ -81,6 +81,6 @@ def test_attention_chunked_decode_matches_full_forward() -> None:
     with torch.no_grad():
         full, _ = mha(x, cos, sin, cache=None)
         empty = KVCache(torch.empty(1, 2, 0, 4), torch.empty(1, 2, 0, 4))
-        _, c1 = mha(x[:, :2], cos, sin, cache=empty)   # prefill 2
-        chunk, _ = mha(x[:, 2:], cos, sin, cache=c1)    # chunked decode of 4
+        _, c1 = mha(x[:, :2], cos, sin, cache=empty)  # prefill 2
+        chunk, _ = mha(x[:, 2:], cos, sin, cache=c1)  # chunked decode of 4
     assert torch.allclose(chunk, full[:, 2:], atol=1e-5)

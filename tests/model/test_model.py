@@ -87,9 +87,7 @@ def test_num_params_counts_parameters(tiny_transformer: Transformer) -> None:
     assert tiny_transformer.num_params() == expected
 
 
-def test_save_load_round_trip_via_base(
-    tiny_transformer: Transformer, tmp_path: Path
-) -> None:
+def test_save_load_round_trip_via_base(tiny_transformer: Transformer, tmp_path: Path) -> None:
     path = tmp_path / "model.pt"
     tiny_transformer.save(path)
     ids = torch.randint(0, tiny_transformer.cfg.vocab_size, (2, 5))

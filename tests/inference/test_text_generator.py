@@ -20,8 +20,13 @@ from minichatbot.model.transformer.model import Transformer
 def text_generator(tiny_bpe_tokenizer):
     torch.manual_seed(0)
     cfg = ModelConfig(
-        vocab_size=tiny_bpe_tokenizer.vocab_size, max_seq_len=64,
-        n_layers=2, n_heads=2, d_model=16, d_ff=32, dropout=0.0,
+        vocab_size=tiny_bpe_tokenizer.vocab_size,
+        max_seq_len=64,
+        n_layers=2,
+        n_heads=2,
+        d_model=16,
+        d_ff=32,
+        dropout=0.0,
     )
     model = Transformer(cfg)
     model.eval()
@@ -52,9 +57,7 @@ def test_return_only_completion_matches_manual_decode(text_generator) -> None:
     out = Generator(strategy=GreedySampling(), eos_id=None).generate(
         text_generator.model, torch.tensor([ids]), max_new_tokens=4
     )
-    expected = text_generator.tokenizer.decode(
-        out[0].tolist()[len(ids):], include_special=False
-    )
+    expected = text_generator.tokenizer.decode(out[0].tolist()[len(ids) :], include_special=False)
     assert got == expected
 
 

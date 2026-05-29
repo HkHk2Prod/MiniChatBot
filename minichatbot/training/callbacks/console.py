@@ -48,10 +48,7 @@ class ConsoleCallback(Callback):
         ]
         if cfg.data.val_path:
             lines.append(f"             val  ={cfg.data.val_path}")
-        lines.append(
-            f"             seq_len={cfg.data.seq_len}, "
-            f"num_workers={cfg.data.num_workers}"
-        )
+        lines.append(f"             seq_len={cfg.data.seq_len}, num_workers={cfg.data.num_workers}")
         lines.append(
             f"  trainer  : steps={cfg.trainer.max_steps}, "
             f"batch={cfg.trainer.batch_size}, "
@@ -108,7 +105,4 @@ class ConsoleCallback(Callback):
 
     def on_train_end(self, ctx: CallbackContext) -> None:
         elapsed = time.monotonic() - (self._t0 or time.monotonic())
-        print(
-            f"[console] training ended at step {ctx.step} "
-            f"(total {_fmt_elapsed(elapsed)})"
-        )
+        print(f"[console] training ended at step {ctx.step} (total {_fmt_elapsed(elapsed)})")

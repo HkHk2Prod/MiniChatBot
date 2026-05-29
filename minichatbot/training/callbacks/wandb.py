@@ -26,8 +26,7 @@ class WandbCallback(Callback):
             import wandb
         except ImportError as e:
             raise ImportError(
-                "wandb is required for WandbCallback. "
-                'Install with: pip install -e ".[wandb]"'
+                'wandb is required for WandbCallback. Install with: pip install -e ".[wandb]"'
             ) from e
         self._wandb = wandb
         self._run = wandb.init(

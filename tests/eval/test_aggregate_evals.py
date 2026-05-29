@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 # aggregate_evals lives under scripts/, which isn't an importable package.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "inference"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts" / "inference"))
 
 from aggregate_evals import (  # noqa: E402
     RunEvals,
@@ -42,20 +42,31 @@ def _runs() -> list[RunEvals]:
     # A base pretrain plus two pipelines: arc (accuracy, higher=better) and
     # lambada (perplexity, lower=better). Stages forked from the same base.
     pretrain = _run(
-        "pretrain_fineweb", "20260520_000000", "pretrain",
+        "pretrain_fineweb",
+        "20260520_000000",
+        "pretrain",
         {"arc_easy": {"acc": 0.40}, "lambada_openai": {"perplexity": 30.0, "acc": 0.30}},
     )
     dapt_arc = _run(
-        "dapt_arc", "20260521_000000", "dapt",
-        {"arc_easy": {"acc": 0.45}}, targets={"arc_easy"},
+        "dapt_arc",
+        "20260521_000000",
+        "dapt",
+        {"arc_easy": {"acc": 0.45}},
+        targets={"arc_easy"},
     )
     dpo_arc = _run(
-        "dpo_arc", "20260522_000000", "dpo",
-        {"arc_easy": {"acc": 0.52}}, targets={"arc_easy"},
+        "dpo_arc",
+        "20260522_000000",
+        "dpo",
+        {"arc_easy": {"acc": 0.52}},
+        targets={"arc_easy"},
     )
     dapt_lambada = _run(
-        "dapt_lambada", "20260521_120000", "dapt",
-        {"lambada_openai": {"perplexity": 21.0, "acc": 0.34}}, targets={"lambada_openai"},
+        "dapt_lambada",
+        "20260521_120000",
+        "dapt",
+        {"lambada_openai": {"perplexity": 21.0, "acc": 0.34}},
+        targets={"lambada_openai"},
     )
     # chronological order, as collect_runs would hand them over
     return [pretrain, dapt_arc, dpo_arc, dapt_lambada]

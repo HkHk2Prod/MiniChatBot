@@ -48,7 +48,7 @@ def test_output_length_without_eos() -> None:
     prompt = torch.tensor([[1, 2], [0, 1]])
     out = Generator(eos_id=None).generate(model, prompt, max_new_tokens=4)
     assert out.shape == (2, prompt.size(1) + 4)
-    assert torch.all(out[:, prompt.size(1):] == 0)  # every new token is the argmax
+    assert torch.all(out[:, prompt.size(1) :] == 0)  # every new token is the argmax
 
 
 def test_eos_early_stops() -> None:
@@ -73,5 +73,5 @@ def test_frequency_penalty_changes_output() -> None:
     penalized = Generator(eos_id=None, frequency_penalty=2.0).generate(
         model, prompt, max_new_tokens=5
     )
-    assert torch.all(plain[:, 1:] == 0)        # unpenalized: stuck on token 0
-    assert not torch.equal(plain, penalized)   # penalty diversifies the output
+    assert torch.all(plain[:, 1:] == 0)  # unpenalized: stuck on token 0
+    assert not torch.equal(plain, penalized)  # penalty diversifies the output

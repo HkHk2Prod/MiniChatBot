@@ -30,8 +30,13 @@ VOCAB = 32
 def _build_trainer(tmp_path: Path, *, max_steps: int, tokenizer=None, seed: int = 0):
     torch.manual_seed(seed)
     mcfg = ModelConfig(
-        vocab_size=VOCAB, max_seq_len=32, n_layers=2, n_heads=2,
-        d_model=16, d_ff=32, dropout=0.0,
+        vocab_size=VOCAB,
+        max_seq_len=32,
+        n_layers=2,
+        n_heads=2,
+        d_model=16,
+        d_ff=32,
+        dropout=0.0,
     )
     model = Transformer(mcfg)
 
@@ -45,17 +50,33 @@ def _build_trainer(tmp_path: Path, *, max_steps: int, tokenizer=None, seed: int 
     optimizer = build_optimizer(model, ocfg)
     scheduler = build_scheduler(optimizer, ocfg, max_steps)
     tcfg = TrainerConfig(
-        max_steps=max_steps, batch_size=BATCH, grad_accum_steps=1,
-        grad_clip=1.0, precision="fp32", compile=False,
+        max_steps=max_steps,
+        batch_size=BATCH,
+        grad_accum_steps=1,
+        grad_clip=1.0,
+        precision="fp32",
+        compile=False,
     )
     full = Config(
-        run_name="t", data=DataConfig(train_path="x", seq_len=SEQ_LEN, num_workers=0),
-        output_dir=str(tmp_path), model=mcfg, optim=ocfg, trainer=tcfg,
+        run_name="t",
+        data=DataConfig(train_path="x", seq_len=SEQ_LEN, num_workers=0),
+        output_dir=str(tmp_path),
+        model=mcfg,
+        optim=ocfg,
+        trainer=tcfg,
     )
     trainer = Trainer(
-        config=tcfg, full_config=full, model=model, loss=PretrainLoss(),
-        optimizer=optimizer, scheduler=scheduler, train_loader=loader,
-        callbacks=[], run_dir=tmp_path, device=torch.device("cpu"), tokenizer=tokenizer,
+        config=tcfg,
+        full_config=full,
+        model=model,
+        loss=PretrainLoss(),
+        optimizer=optimizer,
+        scheduler=scheduler,
+        train_loader=loader,
+        callbacks=[],
+        run_dir=tmp_path,
+        device=torch.device("cpu"),
+        tokenizer=tokenizer,
     )
     return trainer, model, loader
 

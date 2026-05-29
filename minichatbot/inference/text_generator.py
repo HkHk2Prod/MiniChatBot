@@ -97,8 +97,7 @@ class TextGenerator:
             return "" if single else []
 
         encoded = [
-            self.tokenizer.encode(p, include_special=include_special_in_prompt)
-            for p in prompt_list
+            self.tokenizer.encode(p, include_special=include_special_in_prompt) for p in prompt_list
         ]
         completions = self._generate_from_token_ids(
             encoded,
@@ -147,9 +146,7 @@ class TextGenerator:
             return "" if single else []
 
         encoded = [
-            render_prompt_for_completion(
-                [{"role": "user", "content": p}], self.tokenizer
-            )
+            render_prompt_for_completion([{"role": "user", "content": p}], self.tokenizer)
             for p in prompt_list
         ]
         completions = self._generate_from_token_ids(
@@ -171,29 +168,19 @@ class TextGenerator:
         if len({len(ids) for ids in encoded}) == 1:
             # Same length across all prompts — one batched forward stream.
             prompt_ids = torch.tensor(encoded, dtype=torch.long, device=self.device)
-            out = self.generator.generate(
-                self.model, prompt_ids, max_new_tokens=max_new_tokens
-            )
+            out = self.generator.generate(self.model, prompt_ids, max_new_tokens=max_new_tokens)
             out_ids_per_prompt = [out[i].tolist() for i in range(out.size(0))]
         else:
             # Variable length — fall back to per-prompt iteration.
             out_ids_per_prompt = []
             for ids in encoded:
-                prompt_ids = torch.tensor(
-                    [ids], dtype=torch.long, device=self.device
-                )
-                out = self.generator.generate(
-                    self.model, prompt_ids, max_new_tokens=max_new_tokens
-                )
+                prompt_ids = torch.tensor([ids], dtype=torch.long, device=self.device)
+                out = self.generator.generate(self.model, prompt_ids, max_new_tokens=max_new_tokens)
                 out_ids_per_prompt.append(out[0].tolist())
 
         completions: list[str] = []
-        for prompt_ids_list, full_ids in zip(
-            encoded, out_ids_per_prompt, strict=True
-        ):
-            decode_ids = (
-                full_ids[len(prompt_ids_list):] if return_only_completion else full_ids
-            )
+        for prompt_ids_list, full_ids in zip(encoded, out_ids_per_prompt, strict=True):
+            decode_ids = full_ids[len(prompt_ids_list) :] if return_only_completion else full_ids
             completions.append(
                 self.tokenizer.decode(decode_ids, include_special=include_special_in_output)
             )

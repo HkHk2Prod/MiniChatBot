@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Sized
 from datetime import datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import torch
 from torch.utils.data import DataLoader, RandomSampler
@@ -80,9 +80,7 @@ def build_loaders(
         train_sampler = None
         shuffle = False
     elif len(train_ds) > HUGE_DATASET_THRESHOLD:
-        train_sampler = RandomSampler(
-            train_ds, replacement=True, num_samples=len(train_ds)
-        )
+        train_sampler = RandomSampler(train_ds, replacement=True, num_samples=len(train_ds))
         shuffle = False
     else:
         train_sampler = None
@@ -140,7 +138,9 @@ def prepare_model_state(
         return incoming_state, cfg.model, []
 
     ckpt_model_cfg = parse_ckpt_model_config(incoming_state["model_config"])
-    mode = "resume" if resume_ckpt is not None else "from_pretrained"
+    mode: Literal["resume", "from_pretrained"] = (
+        "resume" if resume_ckpt is not None else "from_pretrained"
+    )
     effective_model_cfg, startup_warnings = reconcile_model_config(
         cfg.model, ckpt_model_cfg, mode=mode
     )

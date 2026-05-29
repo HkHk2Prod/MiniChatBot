@@ -22,9 +22,7 @@ class TransformerBlock(nn.Module):
     ) -> None:
         super().__init__()
         self.attn_norm = make_norm(norm_type, d_model)
-        self.attn = MultiHeadAttention(
-            d_model=d_model, n_heads=n_heads, dropout=dropout, bias=bias
-        )
+        self.attn = MultiHeadAttention(d_model=d_model, n_heads=n_heads, dropout=dropout, bias=bias)
         self.ffn_norm = make_norm(norm_type, d_model)
         self.ffn = SwiGLU(d_model=d_model, d_ff=d_ff, bias=bias)
 

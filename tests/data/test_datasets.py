@@ -31,7 +31,7 @@ def test_pretrain_dataset_slices_and_lengths(tmp_path: Path) -> None:
     assert len(ds) == 6 - 3  # one window per valid start index
     first = ds[0]
     assert first.dtype == torch.int64
-    assert first.tolist() == [0, 1, 2, 3]   # length seq_len + 1
+    assert first.tolist() == [0, 1, 2, 3]  # length seq_len + 1
     assert ds[1].tolist() == [1, 2, 3, 4]
 
 

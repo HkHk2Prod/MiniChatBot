@@ -24,6 +24,7 @@ import torch.nn.functional as F
 
 class KVCache(NamedTuple):
     """Per-layer KV cache for autoregressive decoding."""
+
     k: torch.Tensor
     v: torch.Tensor
 
@@ -38,12 +39,10 @@ def precompute_rope_cache(
     if head_dim % 2 != 0:
         raise ValueError(f"head_dim must be even for RoPE, got {head_dim}")
     half = head_dim // 2
-    inv_freq = 1.0 / (
-        base ** (torch.arange(0, half, device=device, dtype=torch.float32) / half)
-    )
+    inv_freq = 1.0 / (base ** (torch.arange(0, half, device=device, dtype=torch.float32) / half))
     t = torch.arange(seq_len, device=device, dtype=torch.float32)
-    freqs = torch.outer(t, inv_freq)                          # (seq_len, half)
-    cos = freqs.cos().repeat_interleave(2, dim=-1)            # (seq_len, head_dim)
+    freqs = torch.outer(t, inv_freq)  # (seq_len, half)
+    cos = freqs.cos().repeat_interleave(2, dim=-1)  # (seq_len, head_dim)
     sin = freqs.sin().repeat_interleave(2, dim=-1)
     return cos, sin
 
@@ -55,9 +54,7 @@ def _rotate_half(x: torch.Tensor) -> torch.Tensor:
     return torch.stack([-x2, x1], dim=-1).flatten(-2)
 
 
-def apply_rope(
-    x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
-) -> torch.Tensor:
+def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
     """Apply RoPE to x.
 
     x:        (..., T, head_dim)
@@ -76,9 +73,7 @@ class MultiHeadAttention(nn.Module):
     ) -> None:
         super().__init__()
         if d_model % n_heads != 0:
-            raise ValueError(
-                f"d_model ({d_model}) must be divisible by n_heads ({n_heads})"
-            )
+            raise ValueError(f"d_model ({d_model}) must be divisible by n_heads ({n_heads})")
         self.d_model = d_model
         self.n_heads = n_heads
         self.head_dim = d_model // n_heads
@@ -115,17 +110,13 @@ class MultiHeadAttention(nn.Module):
 
         dropout_p = self.dropout if self.training else 0.0
         if pos_start == 0:
-            out = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=dropout_p, is_causal=True
-            )
+            out = F.scaled_dot_product_attention(q, k, v, dropout_p=dropout_p, is_causal=True)
         elif T == 1:
             out = F.scaled_dot_product_attention(q, k, v, dropout_p=dropout_p)
         else:
-            attn_mask = torch.ones(
-                T, pos_start + T, dtype=torch.bool, device=q.device
-            ).tril(diagonal=pos_start)
-            out = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=dropout_p, attn_mask=attn_mask
+            attn_mask = torch.ones(T, pos_start + T, dtype=torch.bool, device=q.device).tril(
+                diagonal=pos_start
             )
+            out = F.scaled_dot_product_attention(q, k, v, dropout_p=dropout_p, attn_mask=attn_mask)
         out = out.transpose(1, 2).contiguous().view(B, T, self.d_model)
         return self.out(out), new_cache

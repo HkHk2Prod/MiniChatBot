@@ -76,9 +76,7 @@ class EvalCallback(Callback):
                 for i, batch in enumerate(ctx.val_loader):
                     if self.max_batches is not None and i >= self.max_batches:
                         break
-                    batch = {
-                        k: v.to(device, non_blocking=True) for k, v in batch.items()
-                    }
+                    batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
                     output = model(batch["input_ids"])
                     loss = ctx.loss_fn(output, batch)
                     total += float(loss.item())

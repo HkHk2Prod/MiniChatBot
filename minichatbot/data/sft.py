@@ -99,8 +99,7 @@ class SFTDataset(BaseDataset):
         elif split == "val":
             if cfg.val_path is None:
                 raise ValueError(
-                    "SFTDataset.from_config(split='val') requires "
-                    "DataConfig.val_path to be set."
+                    "SFTDataset.from_config(split='val') requires DataConfig.val_path to be set."
                 )
             path = cfg.val_path
         else:

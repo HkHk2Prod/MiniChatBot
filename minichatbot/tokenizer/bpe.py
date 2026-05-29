@@ -44,8 +44,7 @@ class BPETokenizer(Tokenizer):
         tid = self._hf.token_to_id(token)
         if tid is None:
             raise ValueError(
-                f"BPETokenizer requires special token {token!r}; "
-                f"retrain with it in special_tokens."
+                f"BPETokenizer requires special token {token!r}; retrain with it in special_tokens."
             )
         return tid
 
@@ -55,9 +54,7 @@ class BPETokenizer(Tokenizer):
     def decode(self, ids: list[int], include_special: bool = False) -> str:
         return self._hf.decode(ids, skip_special_tokens=not include_special)
 
-    def encode_batch(
-        self, texts: list[str], include_special: bool = True
-    ) -> list[list[int]]:
+    def encode_batch(self, texts: list[str], include_special: bool = True) -> list[list[int]]:
         encoded = self._hf.encode_batch(texts, add_special_tokens=include_special)
         return [e.ids for e in encoded]
 

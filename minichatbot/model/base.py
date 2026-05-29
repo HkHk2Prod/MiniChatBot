@@ -80,9 +80,7 @@ class LanguageModel(nn.Module, ABC):
 
             target_cls = MODEL_REGISTRY[cfg.type]
             return target_cls.from_config(cfg)
-        raise NotImplementedError(
-            f"{cls.__name__} must override from_config"
-        )
+        raise NotImplementedError(f"{cls.__name__} must override from_config")
 
     def set_gradient_checkpointing(self, enabled: bool) -> None:
         """Enable activation checkpointing (recompute activations in backward to

@@ -100,14 +100,12 @@ class Generator:
                     if self.frequency_penalty != 0.0:
                         last_logits = last_logits - self.frequency_penalty * counts
                     if self.presence_penalty != 0.0:
-                        last_logits = (
-                            last_logits - self.presence_penalty * (counts > 0).to(last_logits.dtype)
+                        last_logits = last_logits - self.presence_penalty * (counts > 0).to(
+                            last_logits.dtype
                         )
                 next_tok = self.strategy(last_logits)
                 if self.eos_id is not None:
-                    next_tok = torch.where(
-                        done, torch.full_like(next_tok, self.eos_id), next_tok
-                    )
+                    next_tok = torch.where(done, torch.full_like(next_tok, self.eos_id), next_tok)
                     done = done | (next_tok == self.eos_id)
                 generated.append(next_tok.unsqueeze(1))
                 if counts is not None:
