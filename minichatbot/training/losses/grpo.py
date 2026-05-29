@@ -38,9 +38,9 @@ class GRPOLoss(Loss):
     ) -> torch.Tensor:
         # Predicting token i uses logits at position i-1, so align
         # logits[:, :-1] with input_ids[:, 1:] (and the mask likewise).
-        logits = output.logits[:, :-1, :]            # (B, T-1, V)
-        targets = batch["input_ids"][:, 1:]          # (B, T-1)
-        mask = batch["loss_mask"][:, 1:]             # (B, T-1)
+        logits = output.logits[:, :-1, :]  # (B, T-1, V)
+        targets = batch["input_ids"][:, 1:]  # (B, T-1)
+        mask = batch["loss_mask"][:, 1:]  # (B, T-1)
         advantages = batch["advantages"].unsqueeze(1)  # (B, 1)
 
         b, t_minus_1, vocab = logits.shape

@@ -87,8 +87,8 @@ def test_resolve_resume_explicit_file_and_dir(tmp_path: Path) -> None:
     run = _make_run(tmp_path, "20260101_000000_demo", steps=[300])
     cfg = _config(tmp_path)
     ckpt = run / "checkpoints" / "ckpt_step_00000300.pt"
-    assert resolve_resume_arg(str(ckpt), cfg) == ckpt   # explicit file
-    assert resolve_resume_arg(str(run), cfg) == ckpt     # dir -> latest within
+    assert resolve_resume_arg(str(ckpt), cfg) == ckpt  # explicit file
+    assert resolve_resume_arg(str(run), cfg) == ckpt  # dir -> latest within
 
 
 def test_resolve_resume_missing_raises(tmp_path: Path) -> None:

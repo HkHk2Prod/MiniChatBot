@@ -47,6 +47,11 @@ data = [
 eval = [
     "lm-eval>=0.4",
 ]
+# 8-bit / paged AdamW optimizers (bitsandbytes). CUDA-only; cuts the fp32 Adam
+# moment buffers ~4x. Opt in with optim.optimizer=adamw_8bit / paged_adamw_8bit.
+bnb = [
+    "bitsandbytes>=0.43",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.4",
@@ -72,3 +77,6 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Keep tests/ on sys.path so module-mirrored subfolders (tests/data/, …)
+# can still `from _stubs import …` and find the shared conftest fixtures.
+pythonpath = ["tests"]

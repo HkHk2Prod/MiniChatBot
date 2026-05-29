@@ -106,7 +106,7 @@ class MiniChatBotLM(LM):
             context = context[:-n_spaces]
         whole = self.tok.encode(context + continuation, include_special=False)
         ctx_enc = self.tok.encode(context, include_special=False) if context else []
-        return ctx_enc, whole[len(ctx_enc):]
+        return ctx_enc, whole[len(ctx_enc) :]
 
     def _score_pairs(self, pairs: list[tuple[list[int], list[int]]]) -> list[tuple[float, bool]]:
         """Score token-id pairs, batched. Sorts by length for padding
@@ -165,7 +165,7 @@ class MiniChatBotLM(LM):
             ctx_ids = self.tok.encode(context, include_special=False)[-keep:]
             prompt = torch.tensor([ctx_ids], dtype=torch.long, device=self._device)
             out = self.generator.generate(self.model, prompt, max_new_tokens=max_gen)
-            text = self.tok.decode(out[0].tolist()[len(ctx_ids):], include_special=False)
+            text = self.tok.decode(out[0].tolist()[len(ctx_ids) :], include_special=False)
             for stop in until:
                 if stop:
                     text = text.split(stop)[0]

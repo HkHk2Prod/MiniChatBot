@@ -13,9 +13,7 @@ from minichatbot.chat.template import (
 from minichatbot.tokenizer.bpe import IM_END_TOKEN, IM_START_TOKEN
 
 
-def _learned_targets(
-    messages: list[dict[str, str]], tok: StubTokenizer
-) -> list[int]:
+def _learned_targets(messages: list[dict[str, str]], tok: StubTokenizer) -> list[int]:
     """What `render_messages` *should* learn: assistant content + its <|im_end|>,
     concatenated across assistant turns, in order."""
     im_end = tok.special_token_id(IM_END_TOKEN)
@@ -121,7 +119,7 @@ def test_render_prompt_ends_with_assistant_header(
         + stub_tokenizer.encode("assistant", include_special=False)
         + stub_tokenizer.encode("\n", include_special=False)
     )
-    assert tokens[-len(suffix):] == suffix
+    assert tokens[-len(suffix) :] == suffix
 
 
 def test_render_prompt_unknown_role_raises(stub_tokenizer: StubTokenizer) -> None:

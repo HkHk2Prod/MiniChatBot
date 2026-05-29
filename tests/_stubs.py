@@ -63,9 +63,7 @@ class StubTokenizer(Tokenizer):
                 out.append(chr(i - self._CHAR_BASE))
         return "".join(out)
 
-    def encode_batch(
-        self, texts: list[str], include_special: bool = True
-    ) -> list[list[int]]:
+    def encode_batch(self, texts: list[str], include_special: bool = True) -> list[list[int]]:
         return [self.encode(t, include_special) for t in texts]
 
     @property

@@ -73,9 +73,7 @@ class BenchmarkCallback(Callback):
         presence_penalty: float = 0.5,
     ) -> None:
         if phase not in PHASES:
-            raise ValueError(
-                f"BenchmarkCallback.phase must be one of {PHASES}, got {phase!r}"
-            )
+            raise ValueError(f"BenchmarkCallback.phase must be one of {PHASES}, got {phase!r}")
         self.phase = phase
         # None -> repo-root default resolved at call time so users can still
         # opt into a CWD-relative path by passing one explicitly.
@@ -94,7 +92,7 @@ class BenchmarkCallback(Callback):
         # body in a try/except and log instead of re-raising.
         try:
             self._run(ctx)
-        except Exception as exc:                                # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
             print(f"[benchmark] skipped: {exc}")
 
     def _run(self, ctx: CallbackContext) -> None:
@@ -172,8 +170,7 @@ class BenchmarkCallback(Callback):
             source_label = f"ckpt_best.pt (step {state.get('step', '?')})"
 
         strategy_desc = (
-            f"{self.strategy_name}(temp={self.temperature}, "
-            f"top_k={self.top_k}, top_p={self.top_p})"
+            f"{self.strategy_name}(temp={self.temperature}, top_k={self.top_k}, top_p={self.top_p})"
         )
         header_lines = [
             f"run_dir:           {ctx.run_dir}",
@@ -192,9 +189,7 @@ class BenchmarkCallback(Callback):
         # on (cfg.rl.reward) so the summary measures the right objective —
         # GSM8K solve_rate for a math run, variety for a variety run. Other
         # phases don't score, so they need no reward.
-        reward = (
-            REWARD_REGISTRY[ctx.config.rl.reward]() if self.phase == "rl" else None
-        )
+        reward = REWARD_REGISTRY[ctx.config.rl.reward]() if self.phase == "rl" else None
 
         output_path = Path(ctx.run_dir) / f"benchmark_{self.phase}.txt"
         print(f"[benchmark] writing {output_path}")
@@ -211,7 +206,7 @@ class BenchmarkCallback(Callback):
                 max_new_tokens=self.max_new_tokens,
                 reward=reward,
                 header_lines=header_lines,
-                verbose=False,    # training stdout is already crowded
+                verbose=False,  # training stdout is already crowded
             )
         finally:
             # Restore in finally so an exception in run_benchmark — still

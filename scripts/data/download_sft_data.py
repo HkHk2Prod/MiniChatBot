@@ -75,7 +75,7 @@ def _stream_rows(
         raise ImportError(
             "download_sft_data.py requires the `datasets` package. "
             'Install with: pip install -e ".[data]"   '
-            "(or pip install \"datasets>=2.20\")"
+            '(or pip install "datasets>=2.20")'
         ) from e
     # Streaming so we don't load the full dataset into RAM. Alpaca-cleaned
     # is small enough to fit comfortably (~25 MB) but the same script

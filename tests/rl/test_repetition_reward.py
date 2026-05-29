@@ -10,11 +10,11 @@ from minichatbot.rl.rewards.repetition import DistinctNGramReward, _distinct_rat
 @pytest.mark.parametrize(
     ("tokens", "n", "expected"),
     [
-        (["a", "b", "c"], 1, 1.0),          # all unigrams distinct
-        (["a", "a", "a"], 1, 1 / 3),        # one distinct of three
-        (["a", "b", "a", "b"], 2, 2 / 3),   # bigrams (a,b),(b,a),(a,b) -> 2 of 3
-        (["a"], 2, 1.0),                    # fewer than two n-grams -> 1.0
-        ([], 1, 1.0),                       # nothing to penalize
+        (["a", "b", "c"], 1, 1.0),  # all unigrams distinct
+        (["a", "a", "a"], 1, 1 / 3),  # one distinct of three
+        (["a", "b", "a", "b"], 2, 2 / 3),  # bigrams (a,b),(b,a),(a,b) -> 2 of 3
+        (["a"], 2, 1.0),  # fewer than two n-grams -> 1.0
+        ([], 1, 1.0),  # nothing to penalize
     ],
 )
 def test_distinct_ratio(tokens: list[str], n: int, expected: float) -> None:

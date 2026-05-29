@@ -30,5 +30,5 @@ class TopPSampling(SamplingStrategy):
         mask = (cumprobs - sorted_probs) > self.p
         sorted_logits = sorted_logits.masked_fill(mask, float("-inf"))
         probs = torch.softmax(sorted_logits, dim=-1)
-        choice = torch.multinomial(probs, num_samples=1)         # (B, 1)
-        return sorted_idx.gather(-1, choice).squeeze(-1)         # (B,)
+        choice = torch.multinomial(probs, num_samples=1)  # (B, 1)
+        return sorted_idx.gather(-1, choice).squeeze(-1)  # (B,)

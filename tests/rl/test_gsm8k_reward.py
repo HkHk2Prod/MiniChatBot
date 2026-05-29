@@ -14,15 +14,15 @@ from minichatbot.rl.rewards.gsm8k import (
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
-        ("1,000", "1000"),       # thousands separators stripped
+        ("1,000", "1000"),  # thousands separators stripped
         ("1000", "1000"),
-        ("1000.00", "1000"),     # trailing decimal zeros dropped -> integer
+        ("1000.00", "1000"),  # trailing decimal zeros dropped -> integer
         ("1,000,000", "1000000"),
-        ("-5", "-5"),            # negatives preserved
-        ("3.14", "3.14"),        # genuine decimals kept
-        ("-2.50", "-2.5"),       # negative + trailing zero trimmed
+        ("-5", "-5"),  # negatives preserved
+        ("3.14", "3.14"),  # genuine decimals kept
+        ("-2.50", "-2.5"),  # negative + trailing zero trimmed
         ("0", "0"),
-        ("abc", "abc"),          # non-numeric returned as-is
+        ("abc", "abc"),  # non-numeric returned as-is
         ("", ""),
     ],
 )

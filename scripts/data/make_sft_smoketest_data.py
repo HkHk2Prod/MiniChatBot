@@ -34,12 +34,14 @@ def _arithmetic_examples(n: int, rng: random.Random) -> list[dict]:
         question = rng.choice(
             [f"What is {a} {op} {b}?", f"Compute {a} {op} {b}.", f"{a} {op} {b} = ?"]
         )
-        out.append({
-            "messages": [
-                {"role": "user", "content": question},
-                {"role": "assistant", "content": f"{ans}."},
-            ]
-        })
+        out.append(
+            {
+                "messages": [
+                    {"role": "user", "content": question},
+                    {"role": "assistant", "content": f"{ans}."},
+                ]
+            }
+        )
     return out
 
 
@@ -55,12 +57,14 @@ def _greeting_examples(n: int, rng: random.Random) -> list[dict]:
     out = []
     for _ in range(n):
         q, a = rng.choice(pairs)
-        out.append({
-            "messages": [
-                {"role": "user", "content": q},
-                {"role": "assistant", "content": a},
-            ]
-        })
+        out.append(
+            {
+                "messages": [
+                    {"role": "user", "content": q},
+                    {"role": "assistant", "content": a},
+                ]
+            }
+        )
     return out
 
 
@@ -69,27 +73,21 @@ def _echo_examples(n: int, rng: random.Random) -> list[dict]:
     out = []
     for _ in range(n):
         w = rng.choice(words)
-        out.append({
-            "messages": [
-                {"role": "user", "content": f"Repeat: {w}"},
-                {"role": "assistant", "content": w},
-            ]
-        })
+        out.append(
+            {
+                "messages": [
+                    {"role": "user", "content": f"Repeat: {w}"},
+                    {"role": "assistant", "content": w},
+                ]
+            }
+        )
     return out
 
 
 def main() -> None:
     rng = random.Random(0)
-    train = (
-        _arithmetic_examples(150, rng)
-        + _greeting_examples(60, rng)
-        + _echo_examples(60, rng)
-    )
-    val = (
-        _arithmetic_examples(20, rng)
-        + _greeting_examples(10, rng)
-        + _echo_examples(10, rng)
-    )
+    train = _arithmetic_examples(150, rng) + _greeting_examples(60, rng) + _echo_examples(60, rng)
+    val = _arithmetic_examples(20, rng) + _greeting_examples(10, rng) + _echo_examples(10, rng)
     rng.shuffle(train)
     rng.shuffle(val)
 

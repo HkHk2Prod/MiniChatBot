@@ -84,9 +84,9 @@ def test_best_checkpoint_survives_pruning(tmp_path: Path) -> None:
 
 def test_periodic_save_respects_every(tmp_path: Path) -> None:
     cb = CheckpointCallback(every=5, keep_last_k=None)
-    cb.on_step_end(_ctx(tmp_path, 3))   # not a multiple of 5 -> no save
+    cb.on_step_end(_ctx(tmp_path, 3))  # not a multiple of 5 -> no save
     assert _step_ckpts(tmp_path) == []
-    cb.on_step_end(_ctx(tmp_path, 5))   # multiple of 5 -> save
+    cb.on_step_end(_ctx(tmp_path, 5))  # multiple of 5 -> save
     assert _step_ckpts(tmp_path) == ["ckpt_step_00000005.pt"]
 
 

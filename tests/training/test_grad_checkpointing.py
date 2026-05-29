@@ -21,7 +21,9 @@ def test_trainer_config_defaults_grad_checkpointing_off() -> None:
 def test_gradients_match_plain_forward(tiny_model_config: ModelConfig) -> None:
     # Same inputs + same init; gradients with checkpointing must match without.
     ids = torch.randint(
-        0, tiny_model_config.vocab_size, (2, 8),
+        0,
+        tiny_model_config.vocab_size,
+        (2, 8),
         generator=torch.Generator().manual_seed(7),
     )
 
@@ -90,8 +92,11 @@ def test_build_model_wires_the_flag(tiny_model_config: ModelConfig) -> None:
 
     cpu = torch.device("cpu")
     common = dict(
-        device=cpu, compile=False, pretrained_ckpt=None,
-        incoming_state=None, weights_label="x",
+        device=cpu,
+        compile=False,
+        pretrained_ckpt=None,
+        incoming_state=None,
+        weights_label="x",
     )
     on = build_model(tiny_model_config, grad_checkpointing=True, **common)
     off = build_model(tiny_model_config, **common)

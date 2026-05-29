@@ -77,15 +77,13 @@ def _expected_logprob(prev_tokens: list[int], cont_tokens: list[int]) -> float:
 
 
 def test_score_empty_continuation() -> None:
-    results = score_batch(
-        _model(), [([1], [])], device=CPU, max_length=10, prefix_id=0
-    )
+    results = score_batch(_model(), [([1], [])], device=CPU, max_length=10, prefix_id=0)
     assert results == [(0.0, True)]
 
 
 def test_score_single_token_logprob_and_non_greedy() -> None:
     # inp = [1, 2]; cont token 2 is predicted from token 1's logits.
-    (logprob, is_greedy), = score_batch(
+    ((logprob, is_greedy),) = score_batch(
         _model(), [([1], [2])], device=CPU, max_length=10, prefix_id=0
     )
     assert logprob == pytest.approx(_expected_logprob([1], [2]))
@@ -95,7 +93,7 @@ def test_score_single_token_logprob_and_non_greedy() -> None:
 
 def test_score_is_greedy_true_when_continuation_is_argmax() -> None:
     # inp = [2, 1]; cont token 1 predicted from token 2's logits (argmax = 1).
-    (logprob, is_greedy), = score_batch(
+    ((logprob, is_greedy),) = score_batch(
         _model(), [([2], [1])], device=CPU, max_length=10, prefix_id=0
     )
     assert logprob == pytest.approx(_expected_logprob([2], [1]))
@@ -104,7 +102,7 @@ def test_score_is_greedy_true_when_continuation_is_argmax() -> None:
 
 def test_score_multi_token_logprob_is_summed() -> None:
     # inp = [1, 2, 0]; cont [2, 0] predicted from tokens [1, 2] respectively.
-    (logprob, is_greedy), = score_batch(
+    ((logprob, is_greedy),) = score_batch(
         _model(), [([1], [2, 0])], device=CPU, max_length=10, prefix_id=0
     )
     assert logprob == pytest.approx(_expected_logprob([1, 2], [2, 0]))
@@ -116,7 +114,7 @@ def test_score_batch_preserves_order() -> None:
     results = score_batch(_model(), batch, device=CPU, max_length=10, prefix_id=0)
     assert results[0][0] == pytest.approx(_expected_logprob([2], [1]))
     assert results[1][0] == pytest.approx(_expected_logprob([1], [2]))
-    assert results[0][1] is True   # [2]->1 is greedy
+    assert results[0][1] is True  # [2]->1 is greedy
     assert results[1][1] is False  # [1]->2 is not
 
 
@@ -126,8 +124,7 @@ def test_ragged_batch_matches_scoring_each_pair_alone() -> None:
     batch = [([1], [2, 0]), ([2], [1])]
     batched = score_batch(_model(), batch, device=CPU, max_length=10, prefix_id=0)
     alone = [
-        score_batch(_model(), [pair], device=CPU, max_length=10, prefix_id=0)[0]
-        for pair in batch
+        score_batch(_model(), [pair], device=CPU, max_length=10, prefix_id=0)[0] for pair in batch
     ]
     for got, want in zip(batched, alone, strict=True):
         assert got[0] == pytest.approx(want[0])

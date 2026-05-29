@@ -168,11 +168,11 @@ def _lower_is_better(metric: str) -> bool:
 
 @dataclass
 class Improvement:
-    task: str                        # the pipeline's target task
+    task: str  # the pipeline's target task
     metric: str
     stages: list[tuple[str, float]]  # (stage, value) at each stage, in pipeline order
-    delta: float                     # value at the last stage minus the first
-    improved: bool                   # moved in the better direction for this metric
+    delta: float  # value at the last stage minus the first
+    improved: bool  # moved in the better direction for this metric
 
 
 def _stage_columns(imps: list[Improvement]) -> list[str]:
@@ -235,9 +235,7 @@ def _md_table(headers: list[str], aligns: list[str], rows: list[list[str]]) -> l
     ``aligns`` is per-column "l" (left) or "r" (right); the separator row gets
     a trailing ``:`` for right-aligned columns.
     """
-    widths = [
-        max(3, len(h), *(len(r[i]) for r in rows)) for i, h in enumerate(headers)
-    ]
+    widths = [max(3, len(h), *(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
 
     def cell(text: str, w: int, align: str) -> str:
         return text.rjust(w) if align == "r" else text.ljust(w)

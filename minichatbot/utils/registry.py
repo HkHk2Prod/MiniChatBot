@@ -16,9 +16,13 @@ from __future__ import annotations
 
 import pkgutil
 from collections.abc import Callable, Iterable
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, cast
 
 T = TypeVar("T")
+# Decorator-scope TypeVar: lets the concrete decorated class type flow through
+# `register(...)`, so `@REGISTRY.register("k")` on `class Foo(...)` keeps `Foo`
+# typed as `type[Foo]` rather than collapsing to `type[T]`.
+C = TypeVar("C")
 
 
 class Registry(Generic[T]):
@@ -26,14 +30,14 @@ class Registry(Generic[T]):
         self._name = name
         self._classes: dict[str, type[T]] = {}
 
-    def register(self, key: str) -> Callable[[type[T]], type[T]]:
-        def decorator(cls: type[T]) -> type[T]:
+    def register(self, key: str) -> Callable[[type[C]], type[C]]:
+        def decorator(cls: type[C]) -> type[C]:
             if key in self._classes:
                 raise ValueError(
                     f"{self._name} registry: '{key}' already registered to "
                     f"{self._classes[key].__name__}"
                 )
-            self._classes[key] = cls
+            self._classes[key] = cast("type[T]", cls)
             return cls
 
         return decorator

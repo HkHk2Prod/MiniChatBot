@@ -32,9 +32,7 @@ def test_vocab_includes_byte_alphabet_and_specials(
 
 
 @pytest.mark.parametrize("text", ROUND_TRIP_TEXTS)
-def test_encode_decode_preserves_content(
-    tiny_bpe_tokenizer: BPETokenizer, text: str
-) -> None:
+def test_encode_decode_preserves_content(tiny_bpe_tokenizer: BPETokenizer, text: str) -> None:
     ids = tiny_bpe_tokenizer.encode(text, include_special=False)
     decoded = tiny_bpe_tokenizer.decode(ids, include_special=False)
     # Byte-level adds a single prefix space; content is otherwise lossless.
@@ -73,9 +71,7 @@ def test_special_token_id_lookups(tiny_bpe_tokenizer: BPETokenizer) -> None:
     assert tiny_bpe_tokenizer.special_token_id("<|definitely-not-a-token|>") is None
 
 
-def test_save_load_round_trip(
-    tiny_bpe_tokenizer: BPETokenizer, tmp_path: Path
-) -> None:
+def test_save_load_round_trip(tiny_bpe_tokenizer: BPETokenizer, tmp_path: Path) -> None:
     path = tmp_path / "tok.json"
     tiny_bpe_tokenizer.save(path)
     reloaded = BPETokenizer.load(path)

@@ -165,16 +165,26 @@ def build_and_train(
 
     tokenizer = build_tokenizer(cfg, run_dir)
     train_loader, val_loader = build_loaders(
-        cfg, tokenizer, dataset_key=dataset_key, collator_key=collator_key,
-        device=device, with_val=(stage not in STAGES_WITHOUT_VAL),
+        cfg,
+        tokenizer,
+        dataset_key=dataset_key,
+        collator_key=collator_key,
+        device=device,
+        with_val=(stage not in STAGES_WITHOUT_VAL),
     )
 
     incoming_state, effective_model_cfg, startup_warnings = prepare_model_state(
-        cfg, resume_ckpt=resume_ckpt, pretrained_ckpt=pretrained_ckpt, device=device,
+        cfg,
+        resume_ckpt=resume_ckpt,
+        pretrained_ckpt=pretrained_ckpt,
+        device=device,
     )
     model = build_model(
-        effective_model_cfg, device=device, compile=cfg.trainer.compile,
-        pretrained_ckpt=pretrained_ckpt, incoming_state=incoming_state,
+        effective_model_cfg,
+        device=device,
+        compile=cfg.trainer.compile,
+        pretrained_ckpt=pretrained_ckpt,
+        incoming_state=incoming_state,
         weights_label="previous-stage",
         grad_checkpointing=cfg.trainer.grad_checkpointing,
     )
@@ -203,13 +213,8 @@ def build_and_train(
     )
 
     if resume_ckpt is not None:
-        print(
-            f"resuming {stage} from {resume_ckpt} "
-            f"(will continue past step {trainer.step})"
-        )
-        trainer.load_checkpoint(
-            resume_ckpt, map_location=device, preloaded_state=incoming_state
-        )
+        print(f"resuming {stage} from {resume_ckpt} (will continue past step {trainer.step})")
+        trainer.load_checkpoint(resume_ckpt, map_location=device, preloaded_state=incoming_state)
         print(f"resumed at step {trainer.step}")
 
     trainer.fit()

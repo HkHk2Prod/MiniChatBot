@@ -71,9 +71,7 @@ def render_messages(
         role = msg["role"]
         content = msg["content"]
         if role not in VALID_ROLES:
-            raise ValueError(
-                f"Unknown role {role!r}. Expected one of {sorted(VALID_ROLES)}."
-            )
+            raise ValueError(f"Unknown role {role!r}. Expected one of {sorted(VALID_ROLES)}.")
 
         # Inter-turn newline (skip before the first turn).
         if turn_idx > 0:
@@ -109,10 +107,7 @@ def render_messages(
     # else IGNORE_INDEX. The very last token has no next token, so it falls
     # off — we don't include it in input_ids.
     input_ids = tokens[:-1]
-    labels = [
-        tokens[i + 1] if is_target[i + 1] else IGNORE_INDEX
-        for i in range(len(tokens) - 1)
-    ]
+    labels = [tokens[i + 1] if is_target[i + 1] else IGNORE_INDEX for i in range(len(tokens) - 1)]
     return input_ids, labels
 
 
@@ -145,9 +140,7 @@ def render_prompt_for_completion(
         role = msg["role"]
         content = msg["content"]
         if role not in VALID_ROLES:
-            raise ValueError(
-                f"Unknown role {role!r}. Expected one of {sorted(VALID_ROLES)}."
-            )
+            raise ValueError(f"Unknown role {role!r}. Expected one of {sorted(VALID_ROLES)}.")
         if turn_idx > 0:
             tokens.extend(nl_ids)
         tokens.append(im_start)

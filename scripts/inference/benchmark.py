@@ -155,9 +155,7 @@ def main() -> None:
         presence_penalty=args.presence_penalty,
     )
 
-    output_path = (
-        Path(args.output) if args.output else _default_output_path(ckpt_path, args.phase)
-    )
+    output_path = Path(args.output) if args.output else _default_output_path(ckpt_path, args.phase)
     print(f"output:     {output_path}\n")
 
     header_lines = [

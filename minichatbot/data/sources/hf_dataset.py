@@ -39,7 +39,7 @@ class HFDatasetSource(CorpusSource):
             raise ImportError(
                 "HFDatasetSource requires the `datasets` package. "
                 'Install with: pip install -e ".[data]"   '
-                "(or pip install \"datasets>=2.20\")"
+                '(or pip install "datasets>=2.20")'
             ) from e
 
         ds = load_dataset(

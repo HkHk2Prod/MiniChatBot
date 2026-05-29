@@ -144,8 +144,7 @@ class SampleGenerationCallback(Callback):
         the completions.
         """
         strategy_str = (
-            f"{self.strategy_name}(temp={self.temperature}, "
-            f"top_k={self.top_k}, top_p={self.top_p})"
+            f"{self.strategy_name}(temp={self.temperature}, top_k={self.top_k}, top_p={self.top_p})"
         )
         return (
             "=== sampler config ===\n"

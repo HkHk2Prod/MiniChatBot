@@ -101,8 +101,7 @@ class LmEvalCallback(Callback):
             if not tasks:
                 continue
             print(
-                f"[lm_eval] {label}: {tasks} "
-                f"(num_fewshot={self.num_fewshot}, limit={self.limit})"
+                f"[lm_eval] {label}: {tasks} (num_fewshot={self.num_fewshot}, limit={self.limit})"
             )
             results = evaluate_fn(
                 model=adapter,

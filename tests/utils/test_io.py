@@ -44,8 +44,8 @@ def test_removes_partial_tmp_on_write_failure(
     monkeypatch.setattr("minichatbot.utils.io.torch.save", boom)
     with pytest.raises(RuntimeError, match="file write failed"):
         atomic_torch_save({"x": 1}, path)
-    assert not path.exists()                # the destination was never created
-    assert list(tmp_path.iterdir()) == []   # and the partial .tmp was cleaned up
+    assert not path.exists()  # the destination was never created
+    assert list(tmp_path.iterdir()) == []  # and the partial .tmp was cleaned up
 
 
 def test_failed_overwrite_keeps_previous_contents(
@@ -63,4 +63,4 @@ def test_failed_overwrite_keeps_previous_contents(
     with pytest.raises(RuntimeError):
         atomic_torch_save({"step": 2}, path)
     assert torch.load(path, weights_only=False)["step"] == 1  # old contents survive
-    assert list(tmp_path.iterdir()) == [path]                 # no orphaned .tmp
+    assert list(tmp_path.iterdir()) == [path]  # no orphaned .tmp

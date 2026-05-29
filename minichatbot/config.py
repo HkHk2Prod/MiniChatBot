@@ -59,6 +59,10 @@ class OptimConfig:
     warmup_steps: int = 1000
     lr_schedule: str = "cosine"
     min_lr_ratio: float = 0.1
+    # "adamw" (torch, fp32 moments) or the bitsandbytes 8-bit variants
+    # "adamw_8bit" / "paged_adamw_8bit", which quantize the Adam moment buffers
+    # ~4x smaller (CUDA-only; needs the `bnb` extra). Embeddings stay fp32.
+    optimizer: str = "adamw"
 
 
 @dataclass
@@ -191,9 +195,7 @@ def load_config(path: str | Path) -> Config:
     with Path(path).open("r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     if not isinstance(raw, dict):
-        raise ValueError(
-            f"Config root at {path} must be a YAML mapping, got {type(raw).__name__}"
-        )
+        raise ValueError(f"Config root at {path} must be a YAML mapping, got {type(raw).__name__}")
     cfg = _from_dict(Config, raw)
     if cfg.stage is None:
         # Back-compat: pre-`stage` configs encode the stage in `data.type`.
@@ -212,6 +214,7 @@ _VALID_NORM = {"rmsnorm", "layernorm"}
 _VALID_LR_SCHED = {"cosine", "linear", "constant"}
 _VALID_DEVICE = {"auto", "cuda", "cpu", "mps"}
 _VALID_DPO_NORM = {"none", "token", "char"}
+_VALID_OPTIMIZER = {"adamw", "adamw_8bit", "paged_adamw_8bit"}
 
 
 def validate(cfg: Config) -> None:
@@ -229,10 +232,12 @@ def validate(cfg: Config) -> None:
             f"optim.lr_schedule={cfg.optim.lr_schedule!r}; "
             f"expected one of {sorted(_VALID_LR_SCHED)}"
         )
-    if cfg.device not in _VALID_DEVICE:
+    if cfg.optim.optimizer not in _VALID_OPTIMIZER:
         raise ValueError(
-            f"device={cfg.device!r}; expected one of {sorted(_VALID_DEVICE)}"
+            f"optim.optimizer={cfg.optim.optimizer!r}; expected one of {sorted(_VALID_OPTIMIZER)}"
         )
+    if cfg.device not in _VALID_DEVICE:
+        raise ValueError(f"device={cfg.device!r}; expected one of {sorted(_VALID_DEVICE)}")
     if cfg.model.d_model % cfg.model.n_heads != 0:
         raise ValueError(
             f"model.d_model ({cfg.model.d_model}) must be divisible by "

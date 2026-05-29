@@ -19,10 +19,7 @@ from urllib.request import urlopen
 from minichatbot.data.sources import SOURCE_REGISTRY
 from minichatbot.data.sources.base import CorpusSource
 
-URL = (
-    "https://raw.githubusercontent.com/karpathy/char-rnn/"
-    "master/data/tinyshakespeare/input.txt"
-)
+URL = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
 
 
 @SOURCE_REGISTRY.register("tiny_shakespeare")
