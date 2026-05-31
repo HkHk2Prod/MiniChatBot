@@ -138,8 +138,8 @@ def test_load_run_infers_stage_from_name_when_absent(tmp_path: Path) -> None:
     (d / "lm_eval_x.json").write_text(
         json.dumps({"results": {"piqa": {"acc,none": 0.6}}}), encoding="utf-8"
     )
-    run = load_run(d)
-    assert run is not None and run.stage == "pretrain"
+    (run,) = load_run(d)
+    assert run.stage == "pretrain" and run.phase == "end"
 
     # An unrecognized prefix stays unlabeled rather than guessing.
     d2 = tmp_path / "20260520_000000_debug_shakespeare"
@@ -147,7 +147,60 @@ def test_load_run_infers_stage_from_name_when_absent(tmp_path: Path) -> None:
     (d2 / "lm_eval_x.json").write_text(
         json.dumps({"results": {"piqa": {"acc,none": 0.6}}}), encoding="utf-8"
     )
-    assert load_run(d2).stage is None
+    (run2,) = load_run(d2)
+    assert run2.stage is None
+
+
+def test_load_run_splits_start_and_end_snapshots(tmp_path: Path) -> None:
+    # A dir holding both an input (start) and result (end) snapshot yields two
+    # RunEvals, named @start / @end, with the start ordered first.
+    d = tmp_path / "20260522_000000_dpo_piqa"
+    d.mkdir()
+    (d / "lm_eval_target_start.json").write_text(
+        json.dumps(
+            {
+                "stage": "dpo",
+                "phase": "start",
+                "split": "target",
+                "results": {"piqa": {"acc,none": 0.56}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (d / "lm_eval_target.json").write_text(
+        json.dumps(
+            {
+                "stage": "dpo",
+                "phase": "end",
+                "split": "target",
+                "results": {"piqa": {"acc,none": 0.67}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    runs = sorted(load_run(d), key=lambda r: r.phase)
+    end, start = runs[0], runs[1]  # alphabetical: "end" < "start"
+    assert start.phase == "start" and start.run_name == "dpo_piqa@start"
+    assert end.phase == "end" and end.run_name == "dpo_piqa@end"
+    assert start.metrics["piqa"]["acc"] == 0.56
+    assert end.metrics["piqa"]["acc"] == 0.67
+    assert start.target_tasks == {"piqa"} == end.target_tasks
+
+
+def test_start_end_snapshot_makes_single_stage_branch_improve() -> None:
+    # A DPO-only branch (no DAPT, no pretrain baseline in scope) still gets a
+    # before->after row from its own start/end snapshots, in @start/@end columns.
+    runs = [
+        _run("dpo_piqa@start", "20260522_000000", "dpo", {"piqa": {"acc": 0.56}}, targets={"piqa"}),
+        _run("dpo_piqa@end", "20260522_000000", "dpo", {"piqa": {"acc": 0.67}}, targets={"piqa"}),
+    ]
+    runs[0].phase, runs[1].phase = "start", "end"
+    (imp,) = build_improvements(runs)
+    assert imp.stages == [("dpo@start", 0.56), ("dpo@end", 0.67)]
+    assert round(imp.delta, 2) == 0.11 and imp.improved is True
+
+    header = next(ln for ln in render_improvements_md(runs) if ln.startswith("| pipeline"))
+    assert "dpo@start" in header and "dpo@end" in header
 
 
 def test_base_pinned_first_even_with_unknown_stage() -> None:

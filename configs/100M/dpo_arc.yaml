@@ -77,4 +77,5 @@ callbacks:
       target_tasks: [arc_easy]
       other_tasks: [piqa, arc_challenge, hellaswag, lambada_openai, wikitext]
       num_fewshot: 0
+      eval_at: both         # score the input checkpoint at start AND the result at end
       # limit: 500          # uncomment for a faster end-of-run eval pass

@@ -74,3 +74,4 @@ callbacks:
       target_tasks: [lambada_openai]
       other_tasks: [arc_easy, piqa, hellaswag, wikitext]
       num_fewshot: 0
+      eval_at: both         # score the input checkpoint at start AND the result at end
