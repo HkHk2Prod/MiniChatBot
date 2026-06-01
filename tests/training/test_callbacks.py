@@ -1,7 +1,8 @@
 """Tests for training callbacks (minichatbot/training/callbacks/*.py).
 
 Covers the CheckpointCallback's pruning / best-tracking logic against a fake
-trainer that just touches files, plus the console elapsed-time formatter.
+trainer that just touches files, the console elapsed-time formatter, and the
+LmEvalCallback's start/end phase gating.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from minichatbot.config import Config, DataConfig
 from minichatbot.training.callbacks.base import CallbackContext
 from minichatbot.training.callbacks.checkpoint import CheckpointCallback
 from minichatbot.training.callbacks.console import _fmt_elapsed
+from minichatbot.training.callbacks.lm_eval_callback import LmEvalCallback
 
 
 class _FakeTrainer:
@@ -117,3 +119,28 @@ def test_best_tracking_only_saves_on_improvement(tmp_path: Path) -> None:
 )
 def test_fmt_elapsed(seconds: int, expected: str) -> None:
     assert _fmt_elapsed(seconds) == expected
+
+
+def test_lm_eval_rejects_unknown_eval_at() -> None:
+    with pytest.raises(ValueError, match="eval_at"):
+        LmEvalCallback(target_tasks=["piqa"], eval_at="sometimes")
+
+
+@pytest.mark.parametrize(
+    ("eval_at", "expected"),
+    [
+        ("end", ["end"]),  # default: only the result
+        ("start", ["start"]),  # only the input baseline
+        ("both", ["start", "end"]),  # baseline then result, in fire order
+    ],
+)
+def test_lm_eval_phase_gating(tmp_path: Path, eval_at: str, expected: list[str]) -> None:
+    # on_train_start / on_train_end should invoke the eval only for the phases
+    # the eval_at setting selects — without actually importing lm_eval/torch.
+    cb = LmEvalCallback(target_tasks=["piqa"], eval_at=eval_at)
+    fired: list[str] = []
+    cb._run = lambda ctx, phase="end": fired.append(phase)  # type: ignore[method-assign]
+    ctx = _ctx(tmp_path, step=0)
+    cb.on_train_start(ctx)
+    cb.on_train_end(ctx)
+    assert fired == expected

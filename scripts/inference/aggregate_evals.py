@@ -2,8 +2,10 @@
 
 Each training stage writes its lm-eval scores into its own run dir:
 `lm_eval_target.json` / `lm_eval_other.json` (the in-training callback) or
-`lm_eval_<ts>.json` (the standalone scripts/inference/eval_harness.py). This
-tool globs the run dirs, lines the runs up chronologically as columns, and
+`lm_eval_<ts>.json` (the standalone scripts/inference/eval_harness.py). A stage
+configured with `eval_at: both` also writes `lm_eval_*_start.json` for its input
+checkpoint, which becomes a separate `<run>@start` column ahead of `<run>@end`.
+This tool globs the run dirs, lines the runs up chronologically as columns, and
 emits a single table so a branch's pretrain -> DAPT -> DPO progression reads
 at a glance (target metrics should climb; collateral tasks may decay).
 
@@ -43,6 +45,9 @@ class RunEvals:
     # task -> metric -> value
     metrics: dict[str, dict[str, float]] = field(default_factory=dict)
     target_tasks: set[str] = field(default_factory=set)
+    # "start" = the stage's input checkpoint (scored at on_train_start);
+    # "end" = the trained result. A run dir can yield one of each.
+    phase: str = "end"
 
     @property
     def label(self) -> str:
@@ -72,19 +77,44 @@ def _scores(task_results: dict) -> dict[str, float]:
     return out
 
 
-def load_run(run_path: Path) -> RunEvals | None:
+def _phase_of(payload: dict, fpath: Path) -> str:
+    """Which snapshot a result file belongs to: "start" (the stage's input,
+    written by the callback's on_train_start) or "end" (the trained result).
+    New files carry an explicit "phase"; older / standalone ones are inferred
+    from the ``_start`` filename suffix, defaulting to "end"."""
+    phase = payload.get("phase")
+    if phase in ("start", "end"):
+        return phase
+    return "start" if fpath.stem.endswith("_start") else "end"
+
+
+def load_run(run_path: Path) -> list[RunEvals]:
+    """Load a run dir into one RunEvals per phase present (start and/or end).
+
+    A stage that evals at both ends writes ``lm_eval_*_start.json`` (input
+    baseline) alongside ``lm_eval_*.json`` (result); each becomes its own
+    column. When a dir holds both, the phase is appended to the name
+    (``dpo_arc@start`` / ``dpo_arc@end``); a lone snapshot keeps the bare name.
+    """
     files = sorted(run_path.glob("lm_eval*.json"))
     if not files:
-        return None
+        return []
     m = RUN_DIR_RE.match(run_path.name)
     timestamp, run_name = (m.group(1), m.group(2)) if m else ("", run_path.name)
-    run = RunEvals(run_dir=run_path.name, run_name=run_name, timestamp=timestamp)
+    by_phase: dict[str, RunEvals] = {}
     for fpath in files:
         try:
             payload = json.loads(fpath.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as exc:
             print(f"[skip] {fpath}: {exc}")
             continue
+        phase = _phase_of(payload, fpath)
+        run = by_phase.get(phase)
+        if run is None:
+            run = RunEvals(
+                run_dir=run_path.name, run_name=run_name, timestamp=timestamp, phase=phase
+            )
+            by_phase[phase] = run
         split = payload.get("split")  # "target" / "other" for the callback files
         run.stage = run.stage or payload.get("stage")
         run.num_fewshot = payload.get("num_fewshot", run.num_fewshot)
@@ -97,26 +127,32 @@ def load_run(run_path: Path) -> RunEvals | None:
             run.metrics.setdefault(task, {}).update(scores)
             if split == "target":
                 run.target_tasks.add(task)
+    runs = [r for r in by_phase.values() if r.metrics]
     # Standalone evals (eval_harness.py) write no "stage"; fall back to the
     # run-name prefix (pretrain_fineweb -> pretrain) when it names a known stage,
     # so such runs still land in the right pipeline column instead of "?".
-    if run.stage is None:
-        prefix = run.run_name.split("_", 1)[0].lower()
-        if prefix in _STAGE_RANK:
-            run.stage = prefix
-    return run if run.metrics else None
+    for run in runs:
+        if run.stage is None:
+            prefix = run.run_name.split("_", 1)[0].lower()
+            if prefix in _STAGE_RANK:
+                run.stage = prefix
+    # Only disambiguate names when a dir actually holds both snapshots; the
+    # common end-only run keeps its bare name and existing output unchanged.
+    if len(runs) > 1:
+        for run in runs:
+            run.run_name = f"{run.run_name}@{run.phase}"
+    return runs
 
 
 def collect_runs(runs_dir: Path, name_filters: list[str]) -> list[RunEvals]:
     runs: list[RunEvals] = []
     for child in sorted(p for p in runs_dir.iterdir() if p.is_dir()):
-        run = load_run(child)
-        if run is None:
-            continue
-        if name_filters and not any(f in run.run_name for f in name_filters):
-            continue
-        runs.append(run)
-    runs.sort(key=lambda r: (r.timestamp, r.run_dir))
+        for run in load_run(child):
+            if name_filters and not any(f in run.run_name for f in name_filters):
+                continue
+            runs.append(run)
+    # Within a dir, the start snapshot must column before its end snapshot.
+    runs.sort(key=lambda r: (r.timestamp, r.run_dir, _phase_rank(r.phase)))
     return runs
 
 
@@ -161,6 +197,18 @@ def _stage_rank(stage: str | None) -> int:
     return _STAGE_RANK.get((stage or "").lower(), 50)
 
 
+def _phase_rank(phase: str | None) -> int:
+    """Within one stage the input (start) snapshot precedes the result (end)."""
+    return 0 if phase == "start" else 1
+
+
+def _label_rank(label: str) -> tuple[int, int]:
+    """Order a pipeline column label like ``dpo@start`` / ``dapt`` by stage then
+    phase, so a stage's start column sits just left of its end column."""
+    stage, _, phase = label.partition("@")
+    return _stage_rank(stage), _phase_rank(phase or "end")
+
+
 def _lower_is_better(metric: str) -> bool:
     m = metric.lower()
     return any(hint in m for hint in _LOWER_IS_BETTER)
@@ -170,15 +218,16 @@ def _lower_is_better(metric: str) -> bool:
 class Improvement:
     task: str  # the pipeline's target task
     metric: str
-    stages: list[tuple[str, float]]  # (stage, value) at each stage, in pipeline order
+    stages: list[tuple[str, float]]  # (stage column label, value), in pipeline order
     delta: float  # value at the last stage minus the first
     improved: bool  # moved in the better direction for this metric
 
 
 def _stage_columns(imps: list[Improvement]) -> list[str]:
-    """Union of stage names across improvements, in canonical pipeline order."""
-    seen = {stage for i in imps for stage, _ in i.stages}
-    return sorted(seen, key=lambda s: (_stage_rank(s), s))
+    """Union of stage column labels across improvements, in pipeline order
+    (stage rank, then start-before-end for a stage scored at both)."""
+    seen = {label for i in imps for label, _ in i.stages}
+    return sorted(seen, key=lambda s: (_label_rank(s), s))
 
 
 def build_pipelines(runs: list[RunEvals]) -> list[tuple[str, list[RunEvals]]]:
@@ -201,21 +250,36 @@ def build_pipelines(runs: list[RunEvals]) -> list[tuple[str, list[RunEvals]]]:
     pipelines: list[tuple[str, list[RunEvals]]] = []
     for task in targets:
         stages = [r for r in runs if task in r.target_tasks]
-        stages.sort(key=lambda r: (_stage_rank(r.stage), r.timestamp, r.run_dir))
+        stages.sort(
+            key=lambda r: (_stage_rank(r.stage), _phase_rank(r.phase), r.timestamp, r.run_dir)
+        )
         chain = [base, *stages] if base is not None and base not in stages else stages
         pipelines.append((task, chain))
     return pipelines
 
 
+def _column_label(run: RunEvals, phased_stages: set[str]) -> str:
+    """The stage column a run contributes to. A stage scored at both ends splits
+    into ``<stage>@start`` / ``<stage>@end``; stages scored once stay bare so the
+    common single-snapshot output is unchanged."""
+    stage = run.stage or "?"
+    return f"{stage}@{run.phase}" if run.stage in phased_stages else stage
+
+
 def build_improvements(runs: list[RunEvals]) -> list[Improvement]:
     """One row per (pipeline target task, metric), carrying the metric's value at
     every stage of the pipeline so progress shows step by step. Metrics seen at
-    fewer than two stages are skipped — a single data point has no change."""
+    fewer than two stages are skipped — a single data point has no change.
+
+    A stage evaluated at both start (input) and end (result) contributes two
+    points under ``<stage>@start`` / ``<stage>@end`` columns, so its own
+    before→after shows even for a single-stage branch."""
+    phased_stages = {r.stage for r in runs if r.phase == "start" and r.stage}
     out: list[Improvement] = []
     for task, chain in build_pipelines(runs):
         for metric in sorted({m for r in chain for m in r.metrics.get(task, {})}):
             stages = [
-                (r.stage or "?", r.metrics[task][metric])
+                (_column_label(r, phased_stages), r.metrics[task][metric])
                 for r in chain
                 if metric in r.metrics.get(task, {})
             ]

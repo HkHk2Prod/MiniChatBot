@@ -6,6 +6,7 @@ import time
 
 from minichatbot.training.callbacks import CALLBACK_REGISTRY
 from minichatbot.training.callbacks.base import Callback, CallbackContext
+from minichatbot.training.runtime_estimate import format_runtime_estimate
 
 
 def _fmt_elapsed(seconds: float) -> str:
@@ -61,6 +62,20 @@ class ConsoleCallback(Callback):
             f"sched={cfg.optim.lr_schedule}, "
             f"wd={cfg.optim.weight_decay}"
         )
+        tokens_seen = (
+            cfg.trainer.max_steps
+            * cfg.trainer.batch_size
+            * cfg.trainer.grad_accum_steps
+            * cfg.data.seq_len
+        )
+        runtime = format_runtime_estimate(
+            n_params,
+            tokens_seen,
+            device,
+            precision=cfg.trainer.precision,
+            grad_checkpointing=cfg.trainer.grad_checkpointing,
+        )
+        lines.append(f"  runtime  : {runtime}")
         print("\n".join(lines))
 
     def on_step_end(self, ctx: CallbackContext) -> None:
